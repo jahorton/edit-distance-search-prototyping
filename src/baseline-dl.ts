@@ -66,13 +66,13 @@ function getDamerauLevenshteinEditDistance(str: string, other: string): number {
 
   // do the actual edit distance computations.
   for(let r = 0; r < str.length; r++) {
-    let lastPositionInOther: number = -1;
+    let lastPositionInOther: number = -1; // implies transposition cost of MAX
     for(let c = 0; c < other.length; c++) {
       let substitutionEditCost = 1;
 
       let prevIndexOfOtherCharInStr = charLastPositionInStr[other.charAt(c)];
       if(prevIndexOfOtherCharInStr === undefined) {
-        prevIndexOfOtherCharInStr = -1;
+        prevIndexOfOtherCharInStr = -1; // implies transposition cost of MAX.
       }
       let prevIndexOfStrCharInOther = lastPositionInOther;
       // Assumes one JS-char per actual char.  (No SMP support)

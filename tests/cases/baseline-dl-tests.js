@@ -2,6 +2,10 @@ var assert = require('chai').assert;
 
 var baselineDistance = require('../../dist').baselineImplementation;
 describe('Baseline Damerau-Levenshtein implementation checks', function() {
+  it("'abc' -> 'abc' = 0", function() {
+    assert.equal(baselineDistance("abc", "abc"), 0);
+  });
+
   it("'abc' -> 'cab' = 2", function() {
     assert.equal(baselineDistance("abc", "cab"), 2);
   });
@@ -34,6 +38,16 @@ describe('Baseline Damerau-Levenshtein implementation checks', function() {
     assert.equal(baselineDistance("teh", "the"), 1);
   });
 
+  // 'aa' considered to be inserted within the transposition.
+  it("'teaah' -> 'the' = 3", function() {
+    assert.equal(baselineDistance("teaah", "the"), 3);
+  });
+
+  // d & b transposed, then 'c' inserted.
+  it("'adb' -> 'abcd' = 2", function() {
+    assert.equal(baselineDistance("adb", "abcd"), 2);
+  });
+
   it("'the' -> '' = 3", function() {
     assert.equal(baselineDistance("the", ""), 3);
   });
@@ -52,5 +66,9 @@ describe('Baseline Damerau-Levenshtein implementation checks', function() {
 
   it("'hiegth' -> 'height' = 2", function() {
     assert.equal(baselineDistance("hiegth", "height"), 2);
+  });
+
+  it("'jellyifhs' -> 'jellyfish' = 2", function() {
+    assert.equal(baselineDistance("jellyifhs", "jellyfish"), 2);
   });
 });
