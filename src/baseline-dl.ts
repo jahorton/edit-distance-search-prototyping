@@ -93,9 +93,3 @@ function getDamerauLevenshteinEditDistance(str: string, other: string): number {
   // return the result.
   return resolvedDistances.getCostAt(str.length -1, other.length - 1);
 }
-
-(function () {
-  if (typeof module !== 'undefined' && typeof module.exports !== 'undefined') {
-    module.exports = getDamerauLevenshteinEditDistance;
-  }
-})();

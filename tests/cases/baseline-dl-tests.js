@@ -1,6 +1,6 @@
 var assert = require('chai').assert;
 
-var baselineDistance = require('../../dist');
+var baselineDistance = require('../../dist').baselineImplementation;
 describe('Baseline Damerau-Levenshtein implementation checks', function() {
   it("'abc' -> 'cab' = 2", function() {
     assert.equal(baselineDistance("abc", "cab"), 2);
