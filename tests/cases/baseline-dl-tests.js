@@ -6,8 +6,16 @@ describe('Baseline Damerau-Levenshtein implementation checks', function() {
     assert.equal(baselineDistance("abc", "cab"), 2);
   });
 
+  it("'abc' -> 'cdb' = 3", function() {
+    assert.equal(baselineDistance("abc", "cdb"), 3);
+  });
+
   it("'cab' -> 'bac' = 2", function() {
     assert.equal(baselineDistance("cab", "bac"), 2);
+  });
+
+  it("'cab' -> 'bdc' = 2", function() {
+    assert.equal(baselineDistance("cab", "bdc"), 3);
   });
 
   it("'access' -> 'assess' = 2", function() {
@@ -24,6 +32,10 @@ describe('Baseline Damerau-Levenshtein implementation checks', function() {
 
   it("'teh' -> 'the' = 1", function() {
     assert.equal(baselineDistance("teh", "the"), 1);
+  });
+
+  it("'the' -> '' = 3", function() {
+    assert.equal(baselineDistance("the", ""), 3);
   });
 
   it("'accomodate' -> 'accommodate' = 1", function() {

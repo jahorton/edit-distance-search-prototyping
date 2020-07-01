@@ -70,7 +70,10 @@ function getDamerauLevenshteinEditDistance(str: string, other: string): number {
     for(let c = 0; c < other.length; c++) {
       let substitutionEditCost = 1;
 
-      let prevIndexOfOtherCharInStr = charLastPositionInStr[other.charAt(c)] || -1;
+      let prevIndexOfOtherCharInStr = charLastPositionInStr[other.charAt(c)];
+      if(prevIndexOfOtherCharInStr === undefined) {
+        prevIndexOfOtherCharInStr = -1;
+      }
       let prevIndexOfStrCharInOther = lastPositionInOther;
       // Assumes one JS-char per actual char.  (No SMP support)
       if(str.charAt(r) == other.charAt(c)) {
