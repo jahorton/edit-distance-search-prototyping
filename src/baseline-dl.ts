@@ -1,6 +1,8 @@
 // This implementation is based heavily upon the "Distance with adjacent transpositions" pseudocode
 // found at https://en.wikipedia.org/wiki/Damerau%E2%80%93Levenshtein_distance.
 
+// Closest existing package I could find:  https://github.com/gustf/js-levenshtein
+
 class EditDistanceCalculationBuffer {
   resolvedDistances: number[][]
 
