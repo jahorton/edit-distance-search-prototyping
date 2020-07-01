@@ -1,7 +1,10 @@
 // This implementation is based heavily upon the "Distance with adjacent transpositions" pseudocode
 // found at https://en.wikipedia.org/wiki/Damerau%E2%80%93Levenshtein_distance.
 
-// Closest existing package I could find:  https://github.com/gustf/js-levenshtein
+// Closest existing packages I could find:  https://github.com/gustf/js-levenshtein
+//                     and sister package:  https://github.com/heuels/js-damerau-levenshtein/blob/master/index.js
+// Note:  they're heavily optimized and designed for use on fully constructed strings.
+// Potential notes useful for optimizations/modifications:  https://en.wikipedia.org/wiki/Wagner%E2%80%93Fischer_algorithm#Possible_modifications
 
 class EditDistanceCalculationBuffer {
   resolvedDistances: number[][]
