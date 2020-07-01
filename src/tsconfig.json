@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "allowJs": false,
+    "outFile": "../dist/index.js",
+    "module": "none",
+    "inlineSources": true,
+    "sourceMap": true,
+    "target": "ES5",
+    "lib": ["ES6"]
+  },
+  "include": [
+    "./*.ts"
+  ]
+}
