@@ -15,7 +15,7 @@ function runTestNaively(input, match) {
   return buffer.getCostAt(input.length-1, match.length-1);
 }
 
-describe('Baseline Damerau-Levenshtein implementation checks', function() {
+describe('Initial iterative Damerau-Levenshtein implementation checks', function() {
   it("'abc' -> 'abc' = 0", function() {
     assert.equal(runTestNaively("abc", "abc"), 0);
   });
