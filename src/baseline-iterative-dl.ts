@@ -55,7 +55,8 @@ class BaselineIterativeDamerauLevenshteinCalculation {
   addInputChar(char: string): BaselineIterativeDamerauLevenshteinCalculation {
     let returnBuffer = new BaselineIterativeDamerauLevenshteinCalculation(this);
     // True index within the buffer
-    let rowIndex = returnBuffer.inputSequence.length + 2;
+    let r = returnBuffer.inputSequence.length;
+    let rowIndex = r + 2;
 
     // The first input char == row index 2, and the second column should be assigned a 1 - deletion of that single char to match an empty string.
     returnBuffer.resolvedDistances[this.resolvedDistances.length] = [Number.MAX_VALUE, rowIndex - 1];
@@ -64,7 +65,7 @@ class BaselineIterativeDamerauLevenshteinCalculation {
 
     for(let c = 0; c < this.matchSequence.length; c++) {
       let colIndex = c + 2;
-      returnBuffer.resolvedDistances[rowIndex][colIndex] = returnBuffer.computeValue(rowIndex-2, c);
+      returnBuffer.resolvedDistances[rowIndex][colIndex] = returnBuffer.computeValue(r, c);
     }
 
     return returnBuffer;
@@ -73,7 +74,8 @@ class BaselineIterativeDamerauLevenshteinCalculation {
   addMatchChar(char: string): BaselineIterativeDamerauLevenshteinCalculation {
     let returnBuffer = new BaselineIterativeDamerauLevenshteinCalculation(this);
     // True index within the buffer
-    let colIndex = this.matchSequence.length + 2;
+    let c = this.matchSequence.length
+    let colIndex = c + 2;
 
     // The first match char == col index 2.
     returnBuffer.resolvedDistances[0][colIndex] = Number.MAX_VALUE;
@@ -83,7 +85,7 @@ class BaselineIterativeDamerauLevenshteinCalculation {
 
     for(let r = 0; r < this.inputSequence.length; r++) {
       let rowIndex = r + 2;
-      returnBuffer.resolvedDistances[rowIndex][colIndex] = returnBuffer.computeValue(r, colIndex-2);
+      returnBuffer.resolvedDistances[rowIndex][colIndex] = returnBuffer.computeValue(r, c);
     }
 
     return returnBuffer;
