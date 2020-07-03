@@ -71,21 +71,62 @@ class DiagonalizedIterativeDamerauLevenshteinCalculation {
     }
   }
 
-  getCostAt(i: number, j: number): number {
+  private getCostAt(i: number, j: number): number {
     let val = this.resolvedDistances[i+2][j+2];
     return val === undefined ? Number.MAX_VALUE : val;
   }
 
-  // TODO:  Noting the link above and the statement "By examining diagonals instead of rows, and by using lazy evaluation...",
-  //        make a version that iteratively increases the diagonal until the result is guaranteed.
-  // 
-  //        BUT keep a version that does the same thing in case we'd prefer the heuristic result instead.  Great for unit tests and
-  //        for using it heuristically with the quicker computation offered by smaller diagonals.
-  //
-  // TODO:  Also write a function callable for _restricted_ comparison checks - "is final cost equal to or less than `c`?"
-  //        Only increases diagonal if necessary.  If 'heuristic' mode already returns a lesser value, no need to boost the diagonal!
-  getFinalCost() {
+  /**
+   * Noting the above link's statement prefixed "By examining diagonals instead of rows, and by using lazy evaluation...",
+   * this function will return the actual edit distance between the strings, temporarily increasing the computed
+   * diagonal's size if necessary.
+   * 
+   * Does not actually mutate the instance.
+   */
+  getFinalCost(): number {
+    let buffer = this as DiagonalizedIterativeDamerauLevenshteinCalculation;
+    let val = buffer.getHeuristicFinalCost();
+    while(val > buffer.diagonalWidth) {
+      // A consequence of treating this class as immutable.
+      buffer = buffer.increaseMaxDistance();
+      val = buffer.getHeuristicFinalCost();
+    }
+
+    return val;
+  }
+
+  /**
+   * Returns this instance's computed edit distance.  If greater than the diagonal's width value, note that it may be an overestimate.
+   */
+  getHeuristicFinalCost(): number {
     return this.getCostAt(this.inputSequence.length-1, this.matchSequence.length-1);
+  }
+
+  /**
+   * Returns `true` if the represented edit distance is less than or equal to the specified threshold, minimizing the amount of calculations
+   * needed to meet the specified limit.
+   * 
+   * Does not mutate the instance.
+   * @param threshold 
+   */
+  hasFinalCostWithin(threshold: number): boolean {
+    let buffer = this as DiagonalizedIterativeDamerauLevenshteinCalculation;
+    let val = buffer.getHeuristicFinalCost();
+    let guaranteedBound = this.diagonalWidth;
+
+    do {
+      if(val <= threshold) {
+        return true;
+      } else if(guaranteedBound < threshold) {
+        buffer = buffer.increaseMaxDistance();
+        guaranteedBound++;
+        val = buffer.getHeuristicFinalCost();
+      } else {
+        break;
+      }
+    } while(true);
+
+    return false;
   }
 
   // Inputs add an extra row / first index entry.
