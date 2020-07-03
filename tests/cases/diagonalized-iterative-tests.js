@@ -162,5 +162,20 @@ describe('Diagonalized Damerau-Levenshtein implementation checks', function() {
       buffer = buffer.increaseMaxDistance();
       assert.equal(buffer.getFinalCost(), 3);
     });
+
+    // Two transpositions:  abc -> ca, ig <- ghi.  Also, one deletion:  'd'.
+    it("'abcdefig' -> 'caefghi'", function() {
+      let buffer = compute("abcdefig", "caefghi", "InputThenMatch", 1);
+      // This test case was constructed with the tranposition parts outside of the center diagonal.  
+      assert.equal(buffer.getFinalCost(), 7);
+
+      // 1 -> 2
+      buffer = buffer.increaseMaxDistance();
+      assert.equal(buffer.getFinalCost(), 5);
+
+      // // 2 -> 3
+      // buffer.increaseMaxDistance();
+      // assert.equal(buffer.getFinalCost(), 5);
+    });
   });
 });

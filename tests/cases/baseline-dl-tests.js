@@ -74,6 +74,11 @@ describe('Baseline Damerau-Levenshtein implementation checks', function() {
 
   it("'aadddres' -> 'address' = 3", function() {
     assert.equal(baselineDistance("aadddres", "address"), 3);
-    assert.equal(baselineDistance("aadddres", "address"), 3);
+  });
+
+  // Two transpositions:  abc -> ca, ig <- ghi.  Each is cost 2 because of the intermediate char in each.
+  // Also, one deletion:  'd'.
+  it("'abcdefig' -> 'caefghi'", function() {
+    assert.equal(baselineDistance("abcdefig", "caefghi"), 5);
   });
 });

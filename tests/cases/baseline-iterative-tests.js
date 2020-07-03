@@ -88,6 +88,11 @@ describe('Initial iterative Damerau-Levenshtein implementation checks', function
   
   it("'aadddres' -> 'address' = 3", function() {
     assert.equal(compute("aadddres", "address").getFinalCost(), 3);
-    assert.equal(compute("aadddres", "address").getFinalCost(), 3);
+  });
+
+  // Two transpositions:  abc -> ca, ig <- ghi.  Each is cost 2 because of the intermediate char in each. 
+  // Also, one deletion:  'd'.
+  it("'abcdefig' -> 'caefghi'", function() {
+    assert.equal(compute("abcdefig", "caefghi").getFinalCost(), 5);
   });
 });

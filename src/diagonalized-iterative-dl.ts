@@ -1,15 +1,27 @@
-// WARNING:  Extremely rough and unoptimized.
-//           Presently very incomplete.
+// Not exactly optimized, but a proof-of-concept 'online'/iterative Damerau-Levenshtein calculator with the following features:
+// - may add new character to the 'input' string or to the 'match' string, reusing all old calculations efficiently.
+// - allows a 'focused' evaluation that seeks if the edit distance is within a specific range.  Designed for use in match-searching,
+//   where we want to find the 'closest' matching strings in a lexicon.
+// - towards such a match-searching algorithm/heuristic: should nothing be found within that range, all prior calculations may be reused
+//   to search across the lexicon with an incremented edit distance.
 //
-// Basis:    Used to optimize calculations for low edit-distance checks, then expanded if/as necessary
-//           if a greater edit distance is merited (as determined externally)
+// In short:  Used to optimize calculations for low edit-distance checks, then expanded if/as necessary
+//            if a greater edit distance is requested.
 //
-// Reference: https://en.wikipedia.org/wiki/Wagner%E2%80%93Fischer_algorithm
-//    - Possible modification:  "if we are only interested in the distance if it is smaller than a threshold..."  
+// Reference: https://en.wikipedia.org/wiki/Wagner%E2%80%93Fischer_algorithm#Possible_modifications
+//    - Motivating statement:  "if we are only interested in the distance if it is smaller than a threshold..."  
 class DiagonalizedIterativeDamerauLevenshteinCalculation {
+  // TODO for future, better-optimized version:  we shouldn't allocate empty/unreferenced array space.
+  // Left to future because the internal transformations involved will definitely not be trivial.
   resolvedDistances: number[][];
-  // 1:  computes the diagonal cells + 1 cell on each side of the diagonal, corresponding to 
-  //     the formulation in the link above.
+  /**
+   * Specifies how far off-diagonal calculations should be performed.  A value of 0 only evaluates cells with matching 
+   * row and column indicies.
+   * 
+   * The resulting value from .getFinalCost() is only guaranteed correct if it is less than or equal to this value.
+   * Otherwise, this object represents a heuristic that _may_ overestimate the true edit distance.  Note that it will
+   * never underestimate.
+   */
   diagonalWidth: number = 1;
 
   // The sequence of characters input so far.
@@ -64,6 +76,14 @@ class DiagonalizedIterativeDamerauLevenshteinCalculation {
     return val === undefined ? Number.MAX_VALUE : val;
   }
 
+  // TODO:  Noting the link above and the statement "By examining diagonals instead of rows, and by using lazy evaluation...",
+  //        make a version that iteratively increases the diagonal until the result is guaranteed.
+  // 
+  //        BUT keep a version that does the same thing in case we'd prefer the heuristic result instead.  Great for unit tests and
+  //        for using it heuristically with the quicker computation offered by smaller diagonals.
+  //
+  // TODO:  Also write a function callable for _restricted_ comparison checks - "is final cost equal to or less than `c`?"
+  //        Only increases diagonal if necessary.  If 'heuristic' mode already returns a lesser value, no need to boost the diagonal!
   getFinalCost() {
     return this.getCostAt(this.inputSequence.length-1, this.matchSequence.length-1);
   }
@@ -161,7 +181,22 @@ class DiagonalizedIterativeDamerauLevenshteinCalculation {
          returnBuffer.resolvedDistances[r+3][rightCellCol+2] = Math.min(updatedDeletionCost, returnBuffer.getCostAt(r+1, rightCellCol));
         }
 
-        // TODO:  compute now-possible transpositions.
+        // Are transpositions possible?  This block will iterate over the cells where this is possible, given the just-updated cell.
+        let transposeCol = rightCellCol + 2;
+        if(transposeCol < returnBuffer.matchSequence.length) {
+          // colChar in col col+1, but was transposed with the char at col+2.
+          let colChar = returnBuffer.matchSequence[rightCellCol+1];
+          // First possible match in input could be at index r + 2, which adjusts row r+2's cost.  Fixed column index, variable row index.
+          let rowCap = transposeCol + returnBuffer.diagonalWidth;  // Compute diagonal for the fixed column index.
+          rowCap = rowCap < returnBuffer.inputSequence.length ? rowCap : returnBuffer.inputSequence.length;
+          for(let transposeRow = r + 2; transposeRow < rowCap; transposeRow++) {
+            if(returnBuffer.inputSequence[transposeRow] == colChar) {
+              // update time!  Note that the col's contribution to the cost is always 0 here.
+              let updatedTranspositionCost = addedCost + (transposeRow - (r+1) - 1) /* row shift count */ + 1;
+              returnBuffer.resolvedDistances[transposeRow+2][transposeCol+2] = Math.min(returnBuffer.getCostAt(transposeRow, transposeCol), updatedTranspositionCost)
+            }
+          }
+        }
       }
 
       let leftCellCol = r - returnBuffer.diagonalWidth;
@@ -174,7 +209,23 @@ class DiagonalizedIterativeDamerauLevenshteinCalculation {
         let updatedInsertionCost = addedCost + 1;
         returnBuffer.resolvedDistances[r+2][leftCellCol+3] = Math.min(updatedInsertionCost, returnBuffer.getCostAt(r, leftCellCol+1));
 
-        // TODO:  compute now-possible transpositions.
+        // Are transpositions possible?  This block will iterate over the cells where this is possible, given the just-updated cell.
+        let transposeRow = r + 2;
+        if(transposeRow < returnBuffer.inputSequence.length) {
+          // rowChar on row r+1, but was transposed with the char at row+2.
+          let rowChar = returnBuffer.inputSequence[r+1];
+          // First possible match in input could be at index leftCellCol + 2, which adjusts col leftCellCol+2's cost.
+          // Fixed row index, variable column index.
+          let colCap = transposeRow + returnBuffer.diagonalWidth; // Compute diagonal for the fixed row index.
+          colCap = colCap < returnBuffer.matchSequence.length ? colCap : returnBuffer.matchSequence.length;
+          for(let transposeCol = leftCellCol + 2; transposeCol < colCap; transposeCol++) {
+            if(returnBuffer.matchSequence[transposeCol] == rowChar) {
+              // update time!  Note that the row's contribution to the cost is always 0 here.
+              let updatedTranspositionCost = addedCost + (transposeCol - (leftCellCol + 1) - 1) /* col shift count */ + 1;
+              returnBuffer.resolvedDistances[transposeRow+2][transposeCol+2] = Math.min(returnBuffer.getCostAt(transposeRow, transposeCol), updatedTranspositionCost);
+            }
+          }
+        }
       }
     }
     return returnBuffer;
