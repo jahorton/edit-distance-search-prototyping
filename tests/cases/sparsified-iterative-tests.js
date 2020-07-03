@@ -54,44 +54,44 @@ function compute(input, match, mode, bandSize) {
 
 describe('Sparsified Damerau-Levenshtein implementation checks', function() {
   it("'abc' -> 'abc' = 0", function() {
-    //assert.equal(compute("abc", "abc", "InputThenMatch").getFinalCost(), 0);
+    assert.equal(compute("abc", "abc", "InputThenMatch").getFinalCost(), 0);
     assert.equal(compute("abc", "abc", "MatchThenInput").getFinalCost(), 0);
   });
 
-  // it("'abc' -> 'cab' = 2", function() {
-  //   assert.equal(compute("abc", "cab", "InputThenMatch").getFinalCost(), 2);
-  //   assert.equal(compute("abc", "cab", "MatchThenInput").getFinalCost(), 2);
-  // });
+  it("'abc' -> 'cab' = 2", function() {
+    assert.equal(compute("abc", "cab", "InputThenMatch").getFinalCost(), 2);
+    assert.equal(compute("abc", "cab", "MatchThenInput").getFinalCost(), 2);
+  });
 
-  // it("'abc' -> 'cdb' = 3", function() {
-  //   assert.equal(compute("abc", "cdb", "InputThenMatch").getFinalCost(), 3);
-  //   assert.equal(compute("abc", "cdb", "MatchThenInput").getFinalCost(), 3);
-  // });
+  it("'abc' -> 'cdb' = 3", function() {
+    assert.equal(compute("abc", "cdb", "InputThenMatch").getFinalCost(), 3);
+    assert.equal(compute("abc", "cdb", "MatchThenInput").getFinalCost(), 3);
+  });
 
-  // it("'cab' -> 'bac' = 2", function() {
-  //   assert.equal(compute("cab", "bac", "InputThenMatch").getFinalCost(), 2);
-  //   assert.equal(compute("cab", "bac", "MatchThenInput").getFinalCost(), 2);
-  // });
+  it("'cab' -> 'bac' = 2", function() {
+    assert.equal(compute("cab", "bac", "InputThenMatch").getFinalCost(), 2);
+    assert.equal(compute("cab", "bac", "MatchThenInput").getFinalCost(), 2);
+  });
 
-  // it("'cab' -> 'bdc' = 2", function() {
-  //   assert.equal(compute("cab", "bdc", "InputThenMatch").getFinalCost(), 3);
-  //   assert.equal(compute("cab", "bdc", "MatchThenInput").getFinalCost(), 3);
-  // });
+  it("'cab' -> 'bdc' = 2", function() {
+    assert.equal(compute("cab", "bdc", "InputThenMatch").getFinalCost(), 3);
+    assert.equal(compute("cab", "bdc", "MatchThenInput").getFinalCost(), 3);
+  });
 
-  // it("'access' -> 'assess' = 2", function() {
-  //   assert.equal(compute("access", "assess", "InputThenMatch").getFinalCost(), 2);
-  //   assert.equal(compute("access", "assess", "MatchThenInput").getFinalCost(), 2);
-  // })
+  it("'access' -> 'assess' = 2", function() {
+    assert.equal(compute("access", "assess", "InputThenMatch").getFinalCost(), 2);
+    assert.equal(compute("access", "assess", "MatchThenInput").getFinalCost(), 2);
+  })
 
-  // it("'foo' -> 'foo' = 0", function() {
-  //   assert.equal(compute("foo", "foo", "InputThenMatch").getFinalCost(), 0);
-  //   assert.equal(compute("foo", "foo", "MatchThenInput").getFinalCost(), 0);
-  // })
+  it("'foo' -> 'foo' = 0", function() {
+    assert.equal(compute("foo", "foo", "InputThenMatch").getFinalCost(), 0);
+    assert.equal(compute("foo", "foo", "MatchThenInput").getFinalCost(), 0);
+  })
 
-  // it("'help' -> 'yelp' = 1", function() {
-  //   assert.equal(compute("help", "yelp", "InputThenMatch").getFinalCost(), 1);
-  //   assert.equal(compute("help", "yelp", "MatchThenInput").getFinalCost(), 1);
-  // })
+  it("'help' -> 'yelp' = 1", function() {
+    assert.equal(compute("help", "yelp", "InputThenMatch").getFinalCost(), 1);
+    assert.equal(compute("help", "yelp", "MatchThenInput").getFinalCost(), 1);
+  })
 
   // it("'teh' -> 'the' = 1", function() {
   //   assert.equal(compute("teh", "the", "InputThenMatch").getFinalCost(), 1);

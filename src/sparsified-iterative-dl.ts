@@ -176,9 +176,9 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
       return returnBuffer;
     }
 
-    let c = r - returnBuffer.diagonalWidth; // position of first (virtual) column entry within the row
+    let c = returnBuffer.diagonalWidth - r; // position of first (virtual) column entry within the row
     c = c < 0 ? 0 : c; // devirtualizes the entry.
-    let cMax = returnBuffer.matchSequence.length - r - 1; // position of the row's last (virtual) column entry.
+    let cMax = returnBuffer.matchSequence.length - r - 1 + returnBuffer.diagonalWidth; // position of the row's last (virtual) column entry, as indexed within the diagonal.
     // devirtualizes the bound, ensures the max index lies within the 'diagonal'.
     cMax = (cMax > 2 * returnBuffer.diagonalWidth) ? 2 * returnBuffer.diagonalWidth : cMax;
 
