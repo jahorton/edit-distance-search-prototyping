@@ -161,7 +161,6 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
 
   // Inputs add an extra row / first index entry.
   addInputChar(char: string): SparsifiedIterativeDamerauLevenshteinCalculation {
-    console.log("addInputChar: " + char);
     let returnBuffer = new SparsifiedIterativeDamerauLevenshteinCalculation(this);
     
     let r = returnBuffer.inputSequence.length;
@@ -186,7 +185,6 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
     for(; c <= cMax; c++) {
       // What is the true (virtual) index represented by this entry in the diagonal?
       let trueColIndex = c + r - returnBuffer.diagonalWidth;
-      console.log("resolving dynamic col " + c + ", true col " + trueColIndex);
 
       var baseSubstitutionCost = returnBuffer.inputSequence[r] == returnBuffer.matchSequence[trueColIndex] ? 0 : 1;
       var substitutionCost: number;
@@ -220,10 +218,6 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
         insertionCost = row[c-1] + 1;
       }
 
-      console.log("substitution: " + substitutionCost);
-      console.log("insertion: " + insertionCost);
-      console.log("deletion: " + deletionCost);
-      console.log();
       row[c] = Math.min(substitutionCost, deletionCost, insertionCost /*, transpositionCost */);
 
       firstEntry = false;
@@ -252,6 +246,7 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
     let firstEntry = true;
     for(; r <= rMax; r++) {
       let cIndexInRow = c - r + this.diagonalWidth;
+      
       var row = returnBuffer.resolvedDistances[r];
 
       // Fortunately, r IS the true row index.  This'll be easier than addInputChar's variation.
@@ -262,21 +257,22 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
       var transpositionCost: number;
 
       if(c == 0) {
-        substitutionCost = c + baseSubstitutionCost;
+        substitutionCost = r + baseSubstitutionCost;
         insertionCost = r + 2; // row 0:  base cost of '1' for 'deleting' row + 1 input chars, then for inserting the first input char.
       } else {
+        if(r == 0) {
+          substitutionCost = c + baseSubstitutionCost;
+        } else if(cIndexInRow >= 0) {
+          substitutionCost = returnBuffer.resolvedDistances[r-1][cIndexInRow] + baseSubstitutionCost;
+        }
         insertionCost = ((cIndexInRow > 0) ? row[cIndexInRow-1] : Number.MAX_VALUE) + 1;
       }
 
       // TODO:  Figure out transpositions.
 
       if(r == 0) {
-        substitutionCost = r + baseSubstitutionCost;
         deletionCost = c + 2;  // row 0:  base cost of 'inserting' col+1 match-string chars, then 'deleting' the first input char.
       } else {
-        if(cIndexInRow > 0) {
-          substitutionCost = returnBuffer.resolvedDistances[r-1][cIndexInRow] + baseSubstitutionCost;
-        }
         if(firstEntry) {
           deletionCost = Number.MAX_VALUE;
         } else {
