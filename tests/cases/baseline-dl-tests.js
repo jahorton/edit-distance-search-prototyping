@@ -71,4 +71,9 @@ describe('Baseline Damerau-Levenshtein implementation checks', function() {
   it("'jellyifhs' -> 'jellyfish' = 2", function() {
     assert.equal(baselineDistance("jellyifhs", "jellyfish"), 2);
   });
+
+  it("'aadddres' -> 'address' = 3", function() {
+    assert.equal(baselineDistance("aadddres", "address"), 3);
+    assert.equal(baselineDistance("aadddres", "address"), 3);
+  });
 });

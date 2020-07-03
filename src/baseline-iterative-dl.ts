@@ -51,6 +51,10 @@ class BaselineIterativeDamerauLevenshteinCalculation {
     return this.resolvedDistances[i+2][j+2];
   }
 
+  getFinalCost() {
+    return this.getCostAt(this.inputSequence.length-1, this.matchSequence.length-1);
+  }
+
   // Inputs add an extra row / first index entry.
   addInputChar(char: string): BaselineIterativeDamerauLevenshteinCalculation {
     let returnBuffer = new BaselineIterativeDamerauLevenshteinCalculation(this);

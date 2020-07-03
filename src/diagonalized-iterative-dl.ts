@@ -8,7 +8,9 @@
 //    - Possible modification:  "if we are only interested in the distance if it is smaller than a threshold..."  
 class DiagonalizedIterativeDamerauLevenshteinCalculation {
   resolvedDistances: number[][];
-  maxEditDistance: number = 1;
+  // 1:  computes the diagonal cells + 1 cell on each side of the diagonal, corresponding to 
+  //     the formulation in the link above.
+  diagonalWidth: number = 1;
 
   // The sequence of characters input so far.
   inputSequence: string[] = [];
@@ -45,7 +47,7 @@ class DiagonalizedIterativeDamerauLevenshteinCalculation {
 
       this.inputSequence = Array.from(other.inputSequence);
       this.matchSequence = Array.from(other.matchSequence);
-      this.maxEditDistance = other.maxEditDistance;
+      this.diagonalWidth = other.diagonalWidth;
     } else {
       // Initialize from scratch.
       let distBuffer = [];
@@ -62,6 +64,10 @@ class DiagonalizedIterativeDamerauLevenshteinCalculation {
     return val === undefined ? Number.MAX_VALUE : val;
   }
 
+  getFinalCost() {
+    return this.getCostAt(this.inputSequence.length-1, this.matchSequence.length-1);
+  }
+
   // Inputs add an extra row / first index entry.
   addInputChar(char: string): DiagonalizedIterativeDamerauLevenshteinCalculation {
     let returnBuffer = new DiagonalizedIterativeDamerauLevenshteinCalculation(this);
@@ -75,9 +81,9 @@ class DiagonalizedIterativeDamerauLevenshteinCalculation {
     returnBuffer.inputSequence.push(char);
 
     // Compute necessary diagonal band range
-    let startCol = r - returnBuffer.maxEditDistance;
+    let startCol = r - returnBuffer.diagonalWidth;
     startCol = startCol >= 0 ? startCol : 0
-    let endCol = r + returnBuffer.maxEditDistance + 1;  // +1 for simple '<' bounds check in for-loop.
+    let endCol = r + returnBuffer.diagonalWidth + 1;  // +1 for simple '<' bounds check in for-loop.
     endCol = endCol >= returnBuffer.matchSequence.length ? returnBuffer.matchSequence.length : endCol;
 
     for(let c = startCol; c < endCol; c++) {
@@ -101,9 +107,9 @@ class DiagonalizedIterativeDamerauLevenshteinCalculation {
     returnBuffer.matchSequence.push(char);
 
     // Compute necessary diagonal band range.
-    let startRow = c - returnBuffer.maxEditDistance;
+    let startRow = c - returnBuffer.diagonalWidth;
     startRow = startRow >= 0 ? startRow : 0
-    let endRow = c + returnBuffer.maxEditDistance + 1; //  +1 for simple '<' bounds check in for-loop.
+    let endRow = c + returnBuffer.diagonalWidth + 1; //  +1 for simple '<' bounds check in for-loop.
     endRow = endRow >= returnBuffer.inputSequence.length ? returnBuffer.inputSequence.length : endRow;
 
     for(let r = startRow; r < endRow; r++) {
@@ -135,5 +141,42 @@ class DiagonalizedIterativeDamerauLevenshteinCalculation {
     let transpositionCost = this.getCostAt(lastInputIndex-1, lastMatchIndex-1) + (r - lastInputIndex - 1) + 1 + (c - lastMatchIndex - 1);
 
     return Math.min(substitutionCost, insertionCost, deletionCost, transpositionCost);
+  }
+
+  public increaseMaxDistance(): DiagonalizedIterativeDamerauLevenshteinCalculation {
+    let returnBuffer = new DiagonalizedIterativeDamerauLevenshteinCalculation(this);
+    returnBuffer.diagonalWidth++;
+
+    for(let r = 0; r < returnBuffer.inputSequence.length; r++) {
+      // Expanding the diagonal means placing a new cell at this column within this row.
+      let rightCellCol = r + returnBuffer.diagonalWidth
+      if(rightCellCol < returnBuffer.matchSequence.length) {
+        // New cell position is valid; compute its value!
+        let addedCost = returnBuffer.computeValue(r, rightCellCol);
+        returnBuffer.resolvedDistances[r+2][rightCellCol+2] = addedCost;
+
+        // Is there a cell to update beneath it?
+        if(r + 1 < returnBuffer.inputSequence.length) {
+         let updatedDeletionCost = addedCost + 1;
+         returnBuffer.resolvedDistances[r+3][rightCellCol+2] = Math.min(updatedDeletionCost, returnBuffer.getCostAt(r+1, rightCellCol));
+        }
+
+        // TODO:  compute now-possible transpositions.
+      }
+
+      let leftCellCol = r - returnBuffer.diagonalWidth;
+      if(leftCellCol >= 0) {
+        // New cell position is valid; compute its value!
+        let addedCost = returnBuffer.computeValue(r, leftCellCol);
+        returnBuffer.resolvedDistances[r+2][leftCellCol+2] = addedCost;
+
+        // The cell to the right will (fortunately) always exist.
+        let updatedInsertionCost = addedCost + 1;
+        returnBuffer.resolvedDistances[r+2][leftCellCol+3] = Math.min(updatedInsertionCost, returnBuffer.getCostAt(r, leftCellCol+1));
+
+        // TODO:  compute now-possible transpositions.
+      }
+    }
+    return returnBuffer;
   }
 }
