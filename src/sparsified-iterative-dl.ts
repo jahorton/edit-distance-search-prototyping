@@ -90,7 +90,7 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
       sparse: false
     }
 
-    if(retVal.col < 0 || retVal.col >= this.diagonalWidth) {
+    if(retVal.col < 0 || retVal.col > 2 * this.diagonalWidth) {
       retVal.sparse = true;
     }
 
@@ -114,11 +114,13 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
   getFinalCost(): number {
     let buffer = this as SparsifiedIterativeDamerauLevenshteinCalculation;
     let val = buffer.getHeuristicFinalCost();
-    while(val > buffer.diagonalWidth) {
-      // A consequence of treating this class as immutable.
-      buffer = buffer.increaseMaxDistance();
-      val = buffer.getHeuristicFinalCost();
-    }
+    // TODO:  revert comment-out op seen below... once increaseMaxDistance is adjusted properly.
+    // while(val > buffer.diagonalWidth) {
+    //   console.log(val);
+    //   // A consequence of treating this class as immutable.
+    //   buffer = buffer.increaseMaxDistance();
+    //   val = buffer.getHeuristicFinalCost();
+    // }
 
     return val;
   }
@@ -152,26 +154,27 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
       } else {
         break;
       }
-    } while(true);
+    } while(/*true*/ false); // TODO:  revert once increaseMaxDistance is adjusted properly.
 
     return false;
   }
 
   // Inputs add an extra row / first index entry.
   addInputChar(char: string): SparsifiedIterativeDamerauLevenshteinCalculation {
+    console.log("addInputChar: " + char);
     let returnBuffer = new SparsifiedIterativeDamerauLevenshteinCalculation(this);
     
     let r = returnBuffer.inputSequence.length;
     returnBuffer.inputSequence.push(char);
 
+    // Insert a row, even if we don't actually do anything with it yet.
+    let row = Array(2 * returnBuffer.diagonalWidth + 1);
+    returnBuffer.resolvedDistances[r] = row;
+
     // If there isn't a 'match' entry yet, there are no values to compute.  Exit immediately.
     if(returnBuffer.matchSequence.length == 0) {
       return returnBuffer;
     }
-
-    // OK, we have something to work with, then.
-    let row = Array(2 * returnBuffer.diagonalWidth + 1);
-    returnBuffer.resolvedDistances[r] = row;
 
     let c = r - returnBuffer.diagonalWidth; // position of first (virtual) column entry within the row
     c = c < 0 ? 0 : c; // devirtualizes the entry.
@@ -183,6 +186,7 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
     for(; c <= cMax; c++) {
       // What is the true (virtual) index represented by this entry in the diagonal?
       let trueColIndex = c + r - returnBuffer.diagonalWidth;
+      console.log("resolving dynamic col " + c + ", true col " + trueColIndex);
 
       var baseSubstitutionCost = returnBuffer.inputSequence[r] == returnBuffer.matchSequence[trueColIndex] ? 0 : 1;
       var substitutionCost: number;
@@ -208,6 +212,7 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
 
       // We only compute insertions if not at the leading edge of the diagonal.
       if(trueColIndex == 0) {
+        substitutionCost = r + baseSubstitutionCost;
         insertionCost = r + 2; // row 0:  base cost of '1' for 'deleting' row + 1 input chars, then for inserting the first input char.
       } else if(firstEntry) {
         insertionCost = Number.MAX_VALUE;
@@ -215,6 +220,10 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
         insertionCost = row[c-1] + 1;
       }
 
+      console.log("substitution: " + substitutionCost);
+      console.log("insertion: " + insertionCost);
+      console.log("deletion: " + deletionCost);
+      console.log();
       row[c] = Math.min(substitutionCost, deletionCost, insertionCost /*, transpositionCost */);
 
       firstEntry = false;
@@ -236,25 +245,27 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
 
     let r = c - returnBuffer.diagonalWidth; // position of first (virtualized) row within the resolvedDistances data structure.
     r = r < 0 ? 0 : r; // devirtualizes the entry (no working with row -1)
-    let rMax = returnBuffer.inputSequence.length - c - 1; // position of the col's last (virtual) row entry.
+    let rMax = returnBuffer.inputSequence.length - 1; // position of the col's last (virtual) row entry.
     // devirtualizes the bound, ensures the max index lies within the 'diagonal'.
-    rMax = (rMax > 2 * returnBuffer.diagonalWidth) ? 2 * returnBuffer.diagonalWidth : rMax;
+    rMax = (rMax > c + returnBuffer.diagonalWidth) ? c + returnBuffer.diagonalWidth : rMax;
 
     let firstEntry = true;
     for(; r <= rMax; r++) {
       let cIndexInRow = c - r + this.diagonalWidth;
-      let row = returnBuffer.resolvedDistances[r];
+      var row = returnBuffer.resolvedDistances[r];
+
       // Fortunately, r IS the true row index.  This'll be easier than addInputChar's variation.
-      var baseSubstitutionCost = returnBuffer.inputSequence[r] == returnBuffer.matchSequence[cIndexInRow] ? 0 : 1;
+      var baseSubstitutionCost = (returnBuffer.inputSequence[r] == returnBuffer.matchSequence[c]) ? 0 : 1;
       var substitutionCost: number;
-      var insertionCost: number
+      var insertionCost: number = Number.MAX_VALUE;
       var deletionCost: number;
       var transpositionCost: number;
 
       if(c == 0) {
+        substitutionCost = c + baseSubstitutionCost;
         insertionCost = r + 2; // row 0:  base cost of '1' for 'deleting' row + 1 input chars, then for inserting the first input char.
       } else {
-        insertionCost = (cIndexInRow > -1 ? returnBuffer.resolvedDistances[r][cIndexInRow] : Number.MAX_VALUE) + 1;
+        insertionCost = ((cIndexInRow > 0) ? row[cIndexInRow-1] : Number.MAX_VALUE) + 1;
       }
 
       // TODO:  Figure out transpositions.
@@ -262,11 +273,15 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
       if(r == 0) {
         substitutionCost = r + baseSubstitutionCost;
         deletionCost = c + 2;  // row 0:  base cost of 'inserting' col+1 match-string chars, then 'deleting' the first input char.
-      } else if(firstEntry) {
-        deletionCost = Number.MAX_VALUE;
       } else {
-        substitutionCost = returnBuffer.resolvedDistances[r-1][cIndexInRow] + baseSubstitutionCost;
-        deletionCost = returnBuffer.resolvedDistances[r-1][cIndexInRow+1] + 1;
+        if(cIndexInRow > 0) {
+          substitutionCost = returnBuffer.resolvedDistances[r-1][cIndexInRow] + baseSubstitutionCost;
+        }
+        if(firstEntry) {
+          deletionCost = Number.MAX_VALUE;
+        } else {
+          deletionCost = returnBuffer.resolvedDistances[r-1][cIndexInRow+1] + 1;
+        }
       }
 
       row[cIndexInRow] = Math.min(substitutionCost, insertionCost, deletionCost /*, transpositionCost */);
