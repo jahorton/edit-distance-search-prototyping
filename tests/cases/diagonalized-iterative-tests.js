@@ -200,7 +200,6 @@ describe('Diagonalized Damerau-Levenshtein implementation checks', function() {
 
       // 1 -> 2
       buffer = buffer.increaseMaxDistance();
-      prettyPrintMatrix(buffer.resolvedDistances);
       assert.equal(buffer.getHeuristicFinalCost(), 3);
     });
 
