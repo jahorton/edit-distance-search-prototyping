@@ -100,7 +100,7 @@ describe('Sparsified Damerau-Levenshtein implementation checks', function() {
   });
 
   // 'aa' considered to be inserted within the transposition.
-  it.skip("'teaah' -> 'the' = 3", function() {
+  it("'teaah' -> 'the' = 3", function() {
     assert.equal(compute("teaah", "the", "InputThenMatch").getFinalCost(), 3);  // Note:  requires diagonal of width 2, not 1.
     assert.equal(compute("teaah", "the", "MatchThenInput").getFinalCost(), 3);
   });
@@ -148,11 +148,11 @@ describe('Sparsified Damerau-Levenshtein implementation checks', function() {
     assert.equal(compute("jellyifhs", "jellyfish", "MatchThenInput").getFinalCost(), 2);
   });
 
-  // it.skip("'aadddres' -> 'address' = 3", function() {
-  //   // If diagonal set to '1', cost is reported as 4.
-  //   assert.equal(compute("aadddres", "address", "InputThenMatch").getFinalCost(), 3); // Error - is returning 5, not 4 (which would be correct for current implementation state)
-  //   assert.equal(compute("aadddres", "address", "MatchThenInput").getFinalCost(), 3);
-  // });
+  it("'aadddres' -> 'address' = 3", function() {
+    // If diagonal set to '1', cost is reported as 4.
+    assert.equal(compute("aadddres", "address", "InputThenMatch").getFinalCost(), 3); // Error - is returning 5, not 4 (which would be correct for current implementation state)
+    assert.equal(compute("aadddres", "address", "MatchThenInput").getFinalCost(), 3);
+  });
 
   describe("Intermediate cost tests", function() {
     it("'abc' -> 'cab' (width 1) = 2", function() {
@@ -217,21 +217,21 @@ describe('Sparsified Damerau-Levenshtein implementation checks', function() {
   });
 
   
-  // describe("Bounded final cost tests", function() {
-  //   it("'adddress' -> 'address' has final cost within 4", function() {
-  //     let buffer = compute("aadddres", "address", "InputThenMatch");
-  //     assert.isTrue(buffer.hasFinalCostWithin(4));
-  //   })
+  describe("Bounded final cost tests", function() {
+    it("'adddress' -> 'address' has final cost within 4", function() {
+      let buffer = compute("aadddres", "address", "InputThenMatch");
+      assert.isTrue(buffer.hasFinalCostWithin(4));
+    })
 
-  //   it("'adddress' -> 'address' has final cost within 3", function() {
-  //     let buffer = compute("aadddres", "address", "InputThenMatch");
-  //     assert.isTrue(buffer.hasFinalCostWithin(3));
-  //   })
+    it("'adddress' -> 'address' has final cost within 3", function() {
+      let buffer = compute("aadddres", "address", "InputThenMatch");
+      assert.isTrue(buffer.hasFinalCostWithin(3));
+    })
 
     
-  //   it("'adddress' -> 'address' does not have final cost within 2", function() {
-  //     let buffer = compute("aadddres", "address", "InputThenMatch");
-  //     assert.isFalse(buffer.hasFinalCostWithin(2));
-  //   })
-  // });
+    it("'adddress' -> 'address' does not have final cost within 2", function() {
+      let buffer = compute("aadddres", "address", "InputThenMatch");
+      assert.isFalse(buffer.hasFinalCostWithin(2));
+    })
+  });
 });

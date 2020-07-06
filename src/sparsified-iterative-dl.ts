@@ -108,13 +108,12 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
   getFinalCost(): number {
     let buffer = this as SparsifiedIterativeDamerauLevenshteinCalculation;
     let val = buffer.getHeuristicFinalCost();
-    // TODO:  revert comment-out op seen below... once increaseMaxDistance is adjusted properly.
-    // while(val > buffer.diagonalWidth) {
-    //   console.log(val);
-    //   // A consequence of treating this class as immutable.
-    //   buffer = buffer.increaseMaxDistance();
-    //   val = buffer.getHeuristicFinalCost();
-    // }
+
+    while(val > buffer.diagonalWidth) {
+      // A consequence of treating this class as immutable.
+      buffer = buffer.increaseMaxDistance();
+      val = buffer.getHeuristicFinalCost();
+    }
 
     return val;
   }
@@ -148,7 +147,7 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
       } else {
         break;
       }
-    } while(/*true*/ false); // TODO:  revert once increaseMaxDistance is adjusted properly.
+    } while(true); // TODO:  revert once increaseMaxDistance is adjusted properly.
 
     return false;
   }
