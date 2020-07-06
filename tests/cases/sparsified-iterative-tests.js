@@ -1,5 +1,5 @@
 var assert = require('chai').assert;
-var DiagonalizedIterativeDamerauLevenshteinCalculation = require('../../dist').secondIterativeImplementation;
+var SparsifiedIterativeDamerauLevenshteinCalculation = require('../../dist').thirdIterativeImplementation;
 
 function prettyPrintMatrix(matrix) {
   for(let r = 0; r < matrix.length; r++) {
@@ -16,7 +16,7 @@ function prettyPrintMatrix(matrix) {
 }
 
 function compute(input, match, mode, bandSize) {
-  let buffer = new DiagonalizedIterativeDamerauLevenshteinCalculation();
+  let buffer = new SparsifiedIterativeDamerauLevenshteinCalculation();
 
   /* SUPPORTED MODES:
    * "InputThenMatch"  // adds all input chars, then all match chars.
@@ -53,7 +53,7 @@ function compute(input, match, mode, bandSize) {
   return buffer;
 }
 
-describe('Diagonalized Damerau-Levenshtein implementation checks', function() {
+describe('Sparsified Damerau-Levenshtein implementation checks', function() {
   it("'abc' -> 'abc' = 0", function() {
     assert.equal(compute("abc", "abc", "InputThenMatch").getFinalCost(), 0);
     assert.equal(compute("abc", "abc", "MatchThenInput").getFinalCost(), 0);
@@ -112,10 +112,11 @@ describe('Diagonalized Damerau-Levenshtein implementation checks', function() {
   });
 
   it("'the' -> '' = 3", function() {
+    // Oh yeah, gotta do the null-string match case.
     assert.equal(compute("the", "", "InputThenMatch").getFinalCost(), 3);
     assert.equal(compute("the", "", "MatchThenInput").getFinalCost(), 3);
   });
-  
+
   it("'' -> 'the' = 3", function() {
     // Oh yeah, gotta do the null-string match case.
     assert.equal(compute("", "the", "InputThenMatch").getFinalCost(), 3);
@@ -149,7 +150,7 @@ describe('Diagonalized Damerau-Levenshtein implementation checks', function() {
 
   it("'aadddres' -> 'address' = 3", function() {
     // If diagonal set to '1', cost is reported as 4.
-    assert.equal(compute("aadddres", "address", "InputThenMatch").getFinalCost(), 3);
+    assert.equal(compute("aadddres", "address", "InputThenMatch").getFinalCost(), 3); // Error - is returning 5, not 4 (which would be correct for current implementation state)
     assert.equal(compute("aadddres", "address", "MatchThenInput").getFinalCost(), 3);
   });
 
