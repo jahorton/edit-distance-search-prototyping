@@ -51,6 +51,11 @@ describe('Baseline Damerau-Levenshtein implementation checks', function() {
   it("'the' -> '' = 3", function() {
     assert.equal(baselineDistance("the", ""), 3);
   });
+  
+  it("'' -> 'the' = 3", function() {
+    // Oh yeah, gotta do the null-string match case.
+    assert.equal(baselineDistance("", "the"), 3);
+  });
 
   it("'accomodate' -> 'accommodate' = 1", function() {
     assert.equal(baselineDistance("accomodate", "accommodate"), 1);

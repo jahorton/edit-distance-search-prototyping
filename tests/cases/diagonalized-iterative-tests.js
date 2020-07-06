@@ -114,6 +114,12 @@ describe('Diagonalized Damerau-Levenshtein implementation checks', function() {
     assert.equal(compute("the", "", "InputThenMatch").getFinalCost(), 3);
     assert.equal(compute("the", "", "MatchThenInput").getFinalCost(), 3);
   });
+  
+  it("'' -> 'the' = 3", function() {
+    // Oh yeah, gotta do the null-string match case.
+    assert.equal(compute("", "the", "InputThenMatch").getFinalCost(), 3);
+    assert.equal(compute("", "the", "MatchThenInput").getFinalCost(), 3);
+  });
 
   it("'accomodate' -> 'accommodate' = 1", function() {
     assert.equal(compute("accomodate", "accommodate", "InputThenMatch").getFinalCost(), 1);
