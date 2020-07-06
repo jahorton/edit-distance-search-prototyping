@@ -98,17 +98,18 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
   }
 
   private getCostAt(i: number, j: number): number {
-    if(i == -1) {
-      return j+1;
-    } else if(j == -1) {
-      return i+1;
+    // Check for and handle the set of fixed-value virtualized indices.
+    if(i < 0 || j < 0) {
+      if(i == -1 && j >= -1) {
+        return j+1;
+      } else if(j == -1 && i >= -1) {
+        return i+1;
+      }
+
+      return Number.MAX_VALUE;
     }
 
     let index = this.getTrueIndex(i, j);
-    if(this.resolvedDistances[index.row] === undefined) {
-      console.error("Invalid state - row not defined!");
-      console.error("Attempt to access row " + index.row + ", but only " + this.resolvedDistances.length + " rows defined.");
-    }
     let val = index.sparse ? undefined : this.resolvedDistances[index.row][index.col];
     
     return val === undefined ? Number.MAX_VALUE : val;
@@ -197,51 +198,14 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
       let trueColIndex = c + r - returnBuffer.diagonalWidth;
 
       var baseSubstitutionCost = returnBuffer.inputSequence[r] == returnBuffer.matchSequence[trueColIndex] ? 0 : 1;
-      var substitutionCost: number;
-      var insertionCost: number;
-      var deletionCost: number;
-      var transpositionCost: number = Number.MAX_VALUE;
-
-      // If it's the first row, deletions are easy.
-      if(r == 0) {
-        substitutionCost = trueColIndex + baseSubstitutionCost;
-
-        // known deletion cost logic - is column-based.
-        deletionCost = trueColIndex + 2;  // row 0:  base cost of 'inserting' col+1 match-string chars, then 'deleting' the first input char.
-      } else {
-        substitutionCost = returnBuffer.resolvedDistances[r-1][c] + baseSubstitutionCost;
-
-        // std deletion logic
-        let value = returnBuffer.resolvedDistances[r-1][c+1];
-        deletionCost = value === undefined ? Number.MAX_VALUE : value + 1;
-      }
+      var substitutionCost: number = returnBuffer.getCostAt(r-1, trueColIndex-1) + baseSubstitutionCost;
+      var insertionCost: number = returnBuffer.getCostAt(r, trueColIndex-1) + 1;
+      var deletionCost: number = returnBuffer.getCostAt(r-1, trueColIndex) + 1;
 
       // Transposition checks
       let lastInputIndex = r > 0 ? this.inputSequence.lastIndexOf(returnBuffer.matchSequence[trueColIndex], r-1) : -1;
       let lastMatchIndex = c > 0 ? this.matchSequence.lastIndexOf(returnBuffer.inputSequence[r], trueColIndex-1) : -1;
-
-      let transpositionInnerEditsCost = (r - lastInputIndex - 1) + 1 + (trueColIndex - lastMatchIndex - 1);
-
-      if(lastInputIndex >= 0 && lastMatchIndex >= 0) {
-        if(lastInputIndex == 0) {
-          transpositionCost = lastMatchIndex + transpositionInnerEditsCost;
-        } else if(lastMatchIndex == 0) {
-          transpositionCost = lastInputIndex + transpositionInnerEditsCost;
-          // If we'd be referencing something outside of the diagonal, the transposition would cost too much to 'win' over a different error-correction option.
-        } else if(Math.abs(lastInputIndex - lastMatchIndex) <= this.diagonalWidth) {
-          transpositionCost = this.getCostAt(lastInputIndex-1, lastMatchIndex-1) + transpositionInnerEditsCost;
-        }
-      }
-
-      // We only compute insertions if not at the leading edge of the diagonal.
-      if(trueColIndex == 0) {
-        substitutionCost = r + baseSubstitutionCost;
-        insertionCost = r + 2; // row 0:  base cost of '1' for 'deleting' row + 1 input chars, then for inserting the first input char.
-      } else if(firstEntry) {
-        insertionCost = Number.MAX_VALUE;
-      } else {
-        insertionCost = row[c-1] + 1;
-      }
+      var transpositionCost = this.getCostAt(lastInputIndex-1, lastMatchIndex-1) + (r - lastInputIndex - 1) + 1 + (trueColIndex - lastMatchIndex - 1);
 
       row[c] = Math.min(substitutionCost, deletionCost, insertionCost, transpositionCost);
 
@@ -276,49 +240,14 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
 
       // Fortunately, r IS the true row index.  This'll be easier than addInputChar's variation.
       var baseSubstitutionCost = (returnBuffer.inputSequence[r] == returnBuffer.matchSequence[c]) ? 0 : 1;
-      var substitutionCost: number;
-      var insertionCost: number = Number.MAX_VALUE;
-      var deletionCost: number;
-      var transpositionCost: number = Number.MAX_VALUE;
-
-      if(c == 0) {
-        substitutionCost = r + baseSubstitutionCost;
-        insertionCost = r + 2; // row 0:  base cost of '1' for 'deleting' row + 1 input chars, then for inserting the first input char.
-      } else {
-        if(r == 0) {
-          substitutionCost = c + baseSubstitutionCost;
-        } else if(cIndexInRow >= 0) {
-          substitutionCost = returnBuffer.resolvedDistances[r-1][cIndexInRow] + baseSubstitutionCost;
-        }
-        insertionCost = ((cIndexInRow > 0) ? row[cIndexInRow-1] : Number.MAX_VALUE) + 1;
-      }
+      var substitutionCost: number = returnBuffer.getCostAt(r-1, c-1) + baseSubstitutionCost;
+      var insertionCost: number = returnBuffer.getCostAt(r, c-1) + 1;
+      var deletionCost: number = returnBuffer.getCostAt(r-1, c) + 1;
 
       // Transposition checks
       let lastInputIndex = r > 0 ? this.inputSequence.lastIndexOf(returnBuffer.matchSequence[c], r-1) : -1;
       let lastMatchIndex = c > 0 ? this.matchSequence.lastIndexOf(returnBuffer.inputSequence[r], c-1) : -1;
-
-      let transpositionInnerEditsCost = (r - lastInputIndex - 1) + 1 + (c - lastMatchIndex - 1);
-
-      if(lastInputIndex >= 0 && lastMatchIndex >= 0) {
-        if(lastInputIndex == 0) {
-          transpositionCost = lastMatchIndex + transpositionInnerEditsCost;
-        } else if(lastMatchIndex == 0) {
-          transpositionCost = lastInputIndex + transpositionInnerEditsCost;
-          // If we'd be referencing something outside of the diagonal, the transposition would cost too much to 'win' over a different error-correction option.
-        } else if(Math.abs(lastInputIndex - lastMatchIndex) <= this.diagonalWidth) {
-          transpositionCost = this.getCostAt(lastInputIndex-1, lastMatchIndex-1) + transpositionInnerEditsCost;
-        }
-      }
-
-      if(r == 0) {
-        deletionCost = c + 2;  // row 0:  base cost of 'inserting' col+1 match-string chars, then 'deleting' the first input char.
-      } else {
-        if(firstEntry) {
-          deletionCost = Number.MAX_VALUE;
-        } else {
-          deletionCost = returnBuffer.resolvedDistances[r-1][cIndexInRow+1] + 1;
-        }
-      }
+      var transpositionCost = this.getCostAt(lastInputIndex-1, lastMatchIndex-1) + (r - lastInputIndex - 1) + 1 + (c - lastMatchIndex - 1);
 
       row[cIndexInRow] = Math.min(substitutionCost, insertionCost, deletionCost, transpositionCost);
 
@@ -332,6 +261,44 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
   public increaseMaxDistance(): SparsifiedIterativeDamerauLevenshteinCalculation {
     let returnBuffer = new SparsifiedIterativeDamerauLevenshteinCalculation(this);
     returnBuffer.diagonalWidth++;
+
+    if(returnBuffer.inputSequence.length < 1 || returnBuffer.matchSequence.length < 1) {
+      return returnBuffer;
+    }
+
+    // Currently under development.
+    for(let r = 0; r < returnBuffer.inputSequence.length; r++) {
+      let leftCell = Number.MAX_VALUE;
+      let leftCellVirtualIndex = r - returnBuffer.diagonalWidth // True index, within the row:  0.
+      if(leftCellVirtualIndex >= 0) {
+        // compute new left cell
+        let substitutionCost = Number.MAX_VALUE;
+        let deletionCost = Number.MAX_VALUE;
+        let transpositionCost = Number.MAX_VALUE;
+
+        let addedCost = Math.min(substitutionCost, deletionCost, transpositionCost);
+
+          // daisy-chain possible updates
+      }
+
+      let rightCell = Number.MAX_VALUE;
+      let rightCellVirtualIndex = r + returnBuffer.diagonalWidth;
+      if(rightCellVirtualIndex < returnBuffer.inputSequence.length) {
+        // compute new right cell
+        let substitutionCost = Number.MAX_VALUE;
+        let insertionCost = Number.MAX_VALUE;
+        let transpositionCost = Number.MAX_VALUE;
+
+        let addedCost = Math.min(substitutionCost, insertionCost, transpositionCost);
+
+          // daisy-chain possible updates
+      }
+      
+      // Constructs the final expanded diagonal for the row.
+      //returnBuffer.resolvedDistances[r] = [leftCell].concat(returnBuffer.resolvedDistances[r], rightCell);
+    }
+
+    return returnBuffer;
 
     // for(let r = 0; r < returnBuffer.inputSequence.length; r++) {
     //   // Expanding the diagonal means placing a new cell at this column within this row.
@@ -394,6 +361,6 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
     //     }
     //   }
     // }
-    return returnBuffer;
+    //return returnBuffer;
   }
 }
