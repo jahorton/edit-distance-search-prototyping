@@ -285,9 +285,27 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
         if(c < returnBuffer.matchSequence.length-1) {
           // We propagate the new added cost (via insertion) to the old left-most cell, which is one to our right.
           returnBuffer.resolvedDistances[r][0] = Math.min(returnBuffer.resolvedDistances[r][0], addedCost+1);
-        }
 
-        // cells (r+2, * >= c+2):  new transposition source
+          // cells (r+2, * > c+2):  new transposition source
+          let transposeRow = r+2;
+          if(r+2 < this.inputSequence.length) { // Row to check for transposes must exist.
+            let rowChar = returnBuffer.inputSequence[r+1];
+            // First possible match in input could be at index leftCellCol + 2, which adjusts col leftCellCol+2's cost.
+            // Fixed row index, variable column index.
+            let colCap = transposeRow + returnBuffer.diagonalWidth; // Compute diagonal for the fixed row index.
+            colCap = colCap < returnBuffer.matchSequence.length ? colCap : returnBuffer.matchSequence.length;
+            for(let transposeCol = c + 3; transposeCol < colCap; transposeCol++) {
+              if(returnBuffer.matchSequence[transposeCol] == rowChar) {
+                // update time!  Note that the row's contribution to the cost is always 0 here.
+                let updatedTranspositionCost = addedCost + (transposeCol - (c + 1) - 1) /* col shift count */ + 1;
+
+                // TODO:  We should be able to calculate the index far more efficiently.
+                let transposeIndex = returnBuffer.getTrueIndex(transposeRow, transposeCol, this.diagonalWidth);
+                returnBuffer.resolvedDistances[transposeIndex.row][transposeIndex.col] = Math.min(returnBuffer.getCostAt(transposeRow, transposeCol, this.diagonalWidth), updatedTranspositionCost);
+              }
+            }
+          }
+        }
       }
 
       let rightCell = Number.MAX_VALUE;
@@ -325,7 +343,25 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
           returnBuffer.resolvedDistances[r+1][2 * this.diagonalWidth] = Math.min(returnBuffer.resolvedDistances[r+1][2 * this.diagonalWidth], addedCost+1);
         }
 
-        // cells(* >= r+2, c+2): new transposition source
+        // cells(* > r+2, c+2): new transposition source
+        let transposeCol = c+2;
+        if(c+2 < this.matchSequence.length) { // Row to check for transposes must exist.
+          let rowChar = returnBuffer.inputSequence[r+1];
+          // First possible match in input could be at index leftCellCol + 2, which adjusts col leftCellCol+2's cost.
+          // Fixed row index, variable column index.
+          let rowCap = transposeCol + returnBuffer.diagonalWidth; // Compute diagonal for the fixed row index.
+          rowCap = rowCap < returnBuffer.inputSequence.length ? rowCap : returnBuffer.inputSequence.length;
+          for(let transposeRow = r + 3; transposeCol < rowCap; transposeCol++) {
+            if(returnBuffer.matchSequence[transposeCol] == rowChar) {
+              // update time!  Note that the col's contribution to the cost is always 0 here.
+              let updatedTranspositionCost = addedCost + (transposeRow - (r + 1) - 1) /* col shift count */ + 1;
+
+              // TODO:  We should be able to calculate the index far more efficiently.
+              let transposeIndex = returnBuffer.getTrueIndex(transposeRow, transposeCol, this.diagonalWidth);
+              returnBuffer.resolvedDistances[transposeIndex.row][transposeIndex.col] = Math.min(returnBuffer.getCostAt(transposeRow, transposeCol, this.diagonalWidth), updatedTranspositionCost);
+            }
+          }
+        }
       }
       
       // Constructs the final expanded diagonal for the row.

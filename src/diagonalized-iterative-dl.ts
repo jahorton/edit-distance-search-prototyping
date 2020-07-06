@@ -228,9 +228,10 @@ class DiagonalizedIterativeDamerauLevenshteinCalculation {
           // colChar in col col+1, but was transposed with the char at col+2.
           let colChar = returnBuffer.matchSequence[rightCellCol+1];
           // First possible match in input could be at index r + 2, which adjusts row r+2's cost.  Fixed column index, variable row index.
+          // But that's a cell that doesn't exist yet... but the cell to its bottom (+3) does.
           let rowCap = transposeCol + returnBuffer.diagonalWidth;  // Compute diagonal for the fixed column index.
           rowCap = rowCap < returnBuffer.inputSequence.length ? rowCap : returnBuffer.inputSequence.length;
-          for(let transposeRow = r + 2; transposeRow < rowCap; transposeRow++) {
+          for(let transposeRow = r + 3; transposeRow < rowCap; transposeRow++) {
             if(returnBuffer.inputSequence[transposeRow] == colChar) {
               // update time!  Note that the col's contribution to the cost is always 0 here.
               let updatedTranspositionCost = addedCost + (transposeRow - (r+1) - 1) /* row shift count */ + 1;
@@ -256,10 +257,11 @@ class DiagonalizedIterativeDamerauLevenshteinCalculation {
           // rowChar on row r+1, but was transposed with the char at row+2.
           let rowChar = returnBuffer.inputSequence[r+1];
           // First possible match in input could be at index leftCellCol + 2, which adjusts col leftCellCol+2's cost.
+          // But that's a cell that doesn't exist yet... but the cell to its right ( +3 ) does.
           // Fixed row index, variable column index.
           let colCap = transposeRow + returnBuffer.diagonalWidth; // Compute diagonal for the fixed row index.
           colCap = colCap < returnBuffer.matchSequence.length ? colCap : returnBuffer.matchSequence.length;
-          for(let transposeCol = leftCellCol + 2; transposeCol < colCap; transposeCol++) {
+          for(let transposeCol = leftCellCol + 3; transposeCol < colCap; transposeCol++) {
             if(returnBuffer.matchSequence[transposeCol] == rowChar) {
               // update time!  Note that the row's contribution to the cost is always 0 here.
               let updatedTranspositionCost = addedCost + (transposeCol - (leftCellCol + 1) - 1) /* col shift count */ + 1;

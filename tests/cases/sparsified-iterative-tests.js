@@ -204,16 +204,16 @@ describe('Sparsified Damerau-Levenshtein implementation checks', function() {
       assert.equal(buffer.getHeuristicFinalCost(), 3);
     });
 
-  //   // Two transpositions:  abc -> ca, ig <- ghi.  Also, one deletion:  'd'.
-  //   it("'abcdefig' -> 'caefghi' (width 1->2) = 5", function() {
-  //     let buffer = compute("abcdefig", "caefghi", "InputThenMatch", 1);
-  //     // This test case was constructed with the tranposition parts outside of the center diagonal.  
-  //     assert.equal(buffer.getHeuristicFinalCost(), 7);
+    // Two transpositions:  abc -> ca, ig <- ghi.  Also, one deletion:  'd'.
+    it("'abcdefig' -> 'caefghi' (width 1->2) = 5", function() {
+      let buffer = compute("abcdefig", "caefghi", "InputThenMatch", 1);
+      // This test case was constructed with the tranposition parts outside of the center diagonal.  
+      assert.equal(buffer.getHeuristicFinalCost(), 7);
 
-  //     // 1 -> 2
-  //     buffer = buffer.increaseMaxDistance();
-  //     assert.equal(buffer.getHeuristicFinalCost(), 5);
-  //   });
+      // 1 -> 2
+      buffer = buffer.increaseMaxDistance();
+      assert.equal(buffer.getHeuristicFinalCost(), 5);
+    });
   });
 
   
