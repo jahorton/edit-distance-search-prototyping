@@ -11,7 +11,7 @@
 // Reference: https://en.wikipedia.org/wiki/Wagner%E2%80%93Fischer_algorithm#Possible_modifications
 //    - Motivating statement:  "if we are only interested in the distance if it is smaller than a threshold..."  
 class DiagonalizedIterativeDamerauLevenshteinCalculation {
-  // Want a possiblyy-better-optimized version where we don't allocate empty/unreferenced array space?
+  // Want a possibly-better-optimized version where we don't allocate empty/unreferenced array space?
   // See the "sparsified" variant @ sparsified-iterative-dl.ts!
   resolvedDistances: number[][];
   /**
