@@ -48,24 +48,7 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
 
   constructor();
   constructor(other: SparsifiedIterativeDamerauLevenshteinCalculation);
-  constructor(other?: SparsifiedIterativeDamerauLevenshteinCalculation) {
-    // The goal is to maintain a buffer like this:
-    // MAX | MAX | MAX | MAX | MAX | ...
-    // MAX |  0  |  1  |  2  |  3  | ...
-    // MAX |  1  |
-    // MAX |  2  |
-    // MAX |  3  |
-    // ... | ... |
-    //
-    // Transpositions from the outermost entries should be impossible, and
-    // are thus set to MAX cost.
-    // 
-    // The second layer reflects the cost of deleting characters from a string's start
-    // in order to align it with the other string.
-    //
-    // The first undefined layer (so, layer 3, index 2) will reflect the costs for matching 
-    // the first character of one string against a character from the other.
-    
+  constructor(other?: SparsifiedIterativeDamerauLevenshteinCalculation) {    
     if(other) {
       // Clone class properties.
       let rowCount = other.resolvedDistances.length;
@@ -83,21 +66,21 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
     }
   }
 
-  private getTrueIndex(r: number, c: number): {row: number, col: number, sparse: boolean} {
+  private getTrueIndex(r: number, c: number, width: number): {row: number, col: number, sparse: boolean} {
     let retVal = {
       row: r,
-      col: c - r + this.diagonalWidth,
+      col: c - r + width,
       sparse: false
     }
 
-    if(retVal.col < 0 || retVal.col > 2 * this.diagonalWidth) {
+    if(retVal.col < 0 || retVal.col > 2 * width) {
       retVal.sparse = true;
     }
 
     return retVal;
   }
 
-  private getCostAt(i: number, j: number): number {
+  private getCostAt(i: number, j: number, width: number = this.diagonalWidth): number {
     // Check for and handle the set of fixed-value virtualized indices.
     if(i < 0 || j < 0) {
       if(i == -1 && j >= -1) {
@@ -109,7 +92,7 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
       return Number.MAX_VALUE;
     }
 
-    let index = this.getTrueIndex(i, j);
+    let index = this.getTrueIndex(i, j, width);
     let val = index.sparse ? undefined : this.resolvedDistances[index.row][index.col];
     
     return val === undefined ? Number.MAX_VALUE : val;
@@ -201,11 +184,14 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
       var substitutionCost: number = returnBuffer.getCostAt(r-1, trueColIndex-1) + baseSubstitutionCost;
       var insertionCost: number = returnBuffer.getCostAt(r, trueColIndex-1) + 1;
       var deletionCost: number = returnBuffer.getCostAt(r-1, trueColIndex) + 1;
+      let transpositionCost: number = Number.MAX_VALUE;
 
-      // Transposition checks
-      let lastInputIndex = r > 0 ? this.inputSequence.lastIndexOf(returnBuffer.matchSequence[trueColIndex], r-1) : -1;
-      let lastMatchIndex = c > 0 ? this.matchSequence.lastIndexOf(returnBuffer.inputSequence[r], trueColIndex-1) : -1;
-      var transpositionCost = this.getCostAt(lastInputIndex-1, lastMatchIndex-1) + (r - lastInputIndex - 1) + 1 + (trueColIndex - lastMatchIndex - 1);
+      if(r > 0 && trueColIndex > 0) { // bypass when transpositions are known to be impossible.
+        // Transposition checks
+        let lastInputIndex = r > 0 ? this.inputSequence.lastIndexOf(returnBuffer.matchSequence[trueColIndex], r-1) : -1;
+        let lastMatchIndex = c > 0 ? this.matchSequence.lastIndexOf(returnBuffer.inputSequence[r], trueColIndex-1) : -1;
+        transpositionCost = this.getCostAt(lastInputIndex-1, lastMatchIndex-1) + (r - lastInputIndex - 1) + 1 + (trueColIndex - lastMatchIndex - 1);
+      }
 
       row[c] = Math.min(substitutionCost, deletionCost, insertionCost, transpositionCost);
 
@@ -243,11 +229,14 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
       var substitutionCost: number = returnBuffer.getCostAt(r-1, c-1) + baseSubstitutionCost;
       var insertionCost: number = returnBuffer.getCostAt(r, c-1) + 1;
       var deletionCost: number = returnBuffer.getCostAt(r-1, c) + 1;
+      let transpositionCost: number = Number.MAX_VALUE;
 
-      // Transposition checks
-      let lastInputIndex = r > 0 ? this.inputSequence.lastIndexOf(returnBuffer.matchSequence[c], r-1) : -1;
-      let lastMatchIndex = c > 0 ? this.matchSequence.lastIndexOf(returnBuffer.inputSequence[r], c-1) : -1;
-      var transpositionCost = this.getCostAt(lastInputIndex-1, lastMatchIndex-1) + (r - lastInputIndex - 1) + 1 + (c - lastMatchIndex - 1);
+      if(r > 0 && c > 0) { // bypass when transpositions are known to be impossible.
+        // Transposition checks
+        let lastInputIndex = r > 0 ? this.inputSequence.lastIndexOf(returnBuffer.matchSequence[c], r-1) : -1;
+        let lastMatchIndex = c > 0 ? this.matchSequence.lastIndexOf(returnBuffer.inputSequence[r], c-1) : -1;
+        transpositionCost = this.getCostAt(lastInputIndex-1, lastMatchIndex-1) + (r - lastInputIndex - 1) + 1 + (c - lastMatchIndex - 1);
+      }
 
       row[cIndexInRow] = Math.min(substitutionCost, insertionCost, deletionCost, transpositionCost);
 
@@ -269,33 +258,79 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
     // Currently under development.
     for(let r = 0; r < returnBuffer.inputSequence.length; r++) {
       let leftCell = Number.MAX_VALUE;
-      let leftCellVirtualIndex = r - returnBuffer.diagonalWidth // True index, within the row:  0.
-      if(leftCellVirtualIndex >= 0) {
+      let c = r - returnBuffer.diagonalWidth // External index of the left-most entry, which we will now calculate.
+      if(c >= 0) {
         // compute new left cell
-        let substitutionCost = Number.MAX_VALUE;
-        let deletionCost = Number.MAX_VALUE;
-        let transpositionCost = Number.MAX_VALUE;
+        var baseSubstitutionCost = (returnBuffer.inputSequence[r] == returnBuffer.matchSequence[c]) ? 0 : 1;
+        var substitutionCost: number = returnBuffer.getCostAt(r-1, c-1) + baseSubstitutionCost; // previous rows already use adjusted diagonal width.
+        var insertionCost: number = Number.MAX_VALUE;
+        var deletionCost: number = returnBuffer.getCostAt(r-1, c) + 1;
+        var transpositionCost: number = Number.MAX_VALUE;
+  
+        if(c==0) { // cell is at edge, thus a known value for insertions exists.
+          // Base cost: r+1, +1 for inserting.
+          insertionCost = r + 2;
+        } else {
+          // Transposition checks.  Only possible if there exists at least one (true) column before the current cell.
+          let lastInputIndex = r > 0 ? this.inputSequence.lastIndexOf(returnBuffer.matchSequence[c], r-1) : -1;
+          let lastMatchIndex = c > 0 ? this.matchSequence.lastIndexOf(returnBuffer.inputSequence[r], c-1) : -1;
+          transpositionCost = this.getCostAt(lastInputIndex-1, lastMatchIndex-1) + (r - lastInputIndex - 1) + 1 + (c - lastMatchIndex - 1);
+        }
 
-        let addedCost = Math.min(substitutionCost, deletionCost, transpositionCost);
+        let addedCost = Math.min(substitutionCost, insertionCost, deletionCost, transpositionCost);
+        leftCell = addedCost;
 
-          // daisy-chain possible updates
+        // daisy-chain possible updates
+
+        // cell (r, c+1):  new insertion source
+        if(c < returnBuffer.matchSequence.length-1) {
+          // We propagate the new added cost (via insertion) to the old left-most cell, which is one to our right.
+          returnBuffer.resolvedDistances[r][0] = Math.min(returnBuffer.resolvedDistances[r][0], addedCost+1);
+        }
+
+        // cells (r+2, * >= c+2):  new transposition source
       }
 
       let rightCell = Number.MAX_VALUE;
-      let rightCellVirtualIndex = r + returnBuffer.diagonalWidth;
-      if(rightCellVirtualIndex < returnBuffer.inputSequence.length) {
+      c = r + returnBuffer.diagonalWidth;
+      if(c < returnBuffer.matchSequence.length) {
         // compute new right cell
-        let substitutionCost = Number.MAX_VALUE;
-        let insertionCost = Number.MAX_VALUE;
-        let transpositionCost = Number.MAX_VALUE;
+        var baseSubstitutionCost = (returnBuffer.inputSequence[r] == returnBuffer.matchSequence[c]) ? 0 : 1;
+        var substitutionCost: number = returnBuffer.getCostAt(r-1, c-1) + baseSubstitutionCost;
+        // the current row wants to use adjusted diagonal width; we must specify use of the old width & its mapping instead.
+        var insertionCost: number = returnBuffer.getCostAt(r, c-1, this.diagonalWidth) + 1; 
 
-        let addedCost = Math.min(substitutionCost, insertionCost, transpositionCost);
+        // Conditionally possible.
+        var deletionCost: number = Number.MAX_VALUE;
+        var transpositionCost: number = Number.MAX_VALUE;
+  
+        // Only one of the two costs may actually be assigned.
+        if(r == 0) { // cell is at edge, thus a known value for insertions exists.
+          // Base cost: c+1, +1 for inserting.
+          deletionCost = c + 2;
+        } else {
+          // Transposition checks.  Only possible if there exists at least one (true) row before the current cell.
+          let lastInputIndex = r > 0 ? this.inputSequence.lastIndexOf(returnBuffer.matchSequence[c], r-1) : -1;
+          let lastMatchIndex = c > 0 ? this.matchSequence.lastIndexOf(returnBuffer.inputSequence[r], c-1) : -1;
+          transpositionCost = this.getCostAt(lastInputIndex-1, lastMatchIndex-1) + (r - lastInputIndex - 1) + 1 + (c - lastMatchIndex - 1);
+        }
 
-          // daisy-chain possible updates
+        let addedCost = Math.min(substitutionCost, insertionCost, deletionCost, transpositionCost);
+        rightCell = addedCost;
+
+        // daisy-chain possible updates
+
+        // cell (r+1, c):  new deletion source
+        if(r < returnBuffer.inputSequence.length) {
+          // We propagate the new added cost (via deletion) to the old right-most cell, which is one to our right.
+          returnBuffer.resolvedDistances[r+1][2 * this.diagonalWidth] = Math.min(returnBuffer.resolvedDistances[r+1][2 * this.diagonalWidth], addedCost+1);
+        }
+
+        // cells(* >= r+2, c+2): new transposition source
       }
       
       // Constructs the final expanded diagonal for the row.
-      //returnBuffer.resolvedDistances[r] = [leftCell].concat(returnBuffer.resolvedDistances[r], rightCell);
+      returnBuffer.resolvedDistances[r] = [leftCell].concat(returnBuffer.resolvedDistances[r], rightCell);
     }
 
     return returnBuffer;

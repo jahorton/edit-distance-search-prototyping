@@ -1,6 +1,20 @@
 var assert = require('chai').assert;
 var SparsifiedIterativeDamerauLevenshteinCalculation = require('../../dist').thirdIterativeImplementation;
 
+function prettyPrintMatrix(matrix) {
+  for(let r = 0; r < matrix.length; r++) {
+    console.log(JSON.stringify(matrix[r], function(key, value) {
+      if(value == Number.MAX_VALUE) {
+        return "MAX";
+      } else if(value === undefined) {
+        return -1;
+      } else {
+        return value;
+      }
+    }));
+  }
+}
+
 function compute(input, match, mode, bandSize) {
   let buffer = new SparsifiedIterativeDamerauLevenshteinCalculation();
 
@@ -35,19 +49,6 @@ function compute(input, match, mode, bandSize) {
     default:
       throw "Invalid test mode specified!"
   }
-
-  // // Pretty-printing for the buffer:
-  // for(let r = 0; r < buffer.resolvedDistances.length; r++) {
-  //   console.log(JSON.stringify(buffer.resolvedDistances[r], function(key, value) {
-  //     if(value == Number.MAX_VALUE) {
-  //       return "MAX";
-  //     } else if(value === undefined) {
-  //       return -1;
-  //     } else {
-  //       return value;
-  //     }
-  //   }));
-  // }
 
   return buffer;
 }
@@ -153,55 +154,55 @@ describe('Sparsified Damerau-Levenshtein implementation checks', function() {
   //   assert.equal(compute("aadddres", "address", "MatchThenInput").getFinalCost(), 3);
   // });
 
-  // describe("Intermediate cost tests", function() {
-  //   it("'abc' -> 'cab' (width 1) = 2", function() {
-  //     // Technically a heuristic here, but it gets the right value b/c all changes are on the diagonal.
-  //     assert.equal(compute("abc", "cab", "InputThenMatch").getHeuristicFinalCost(), 2);
-  //     assert.equal(compute("abc", "cab", "MatchThenInput").getHeuristicFinalCost(), 2);
-  //   });
+  describe("Intermediate cost tests", function() {
+    it("'abc' -> 'cab' (width 1) = 2", function() {
+      // Technically a heuristic here, but it gets the right value b/c all changes are on the diagonal.
+      assert.equal(compute("abc", "cab", "InputThenMatch").getHeuristicFinalCost(), 2);
+      assert.equal(compute("abc", "cab", "MatchThenInput").getHeuristicFinalCost(), 2);
+    });
 
-  //   it("'aadddres' -> 'address' (width 1) = 4", function() {
-  //     // If diagonal set to '1', cost is reported as 4.
-  //     assert.equal(compute("aadddres", "address", "InputThenMatch").getHeuristicFinalCost(), 4);
-  //     assert.equal(compute("aadddres", "address", "MatchThenInput").getHeuristicFinalCost(), 4);
-  //   });
+    it("'aadddres' -> 'address' (width 1) = 4", function() {
+      // If diagonal set to '1', cost is reported as 4.
+      assert.equal(compute("aadddres", "address", "InputThenMatch").getHeuristicFinalCost(), 4);
+      assert.equal(compute("aadddres", "address", "MatchThenInput").getHeuristicFinalCost(), 4);
+    });
   
-  //   it("'aadddres' -> 'address' (width 2) = 3", function() {
-  //     // If diagonal set to '1', cost is reported as 4.
-  //     assert.equal(compute("aadddres", "address", "InputThenMatch", 2).getHeuristicFinalCost(), 3);
-  //     assert.equal(compute("aadddres", "address", "MatchThenInput", 2).getHeuristicFinalCost(), 3);
-  //   });
+    it("'aadddres' -> 'address' (width 2) = 3", function() {
+      // If diagonal set to '1', cost is reported as 4.
+      assert.equal(compute("aadddres", "address", "InputThenMatch", 2).getHeuristicFinalCost(), 3);
+      assert.equal(compute("aadddres", "address", "MatchThenInput", 2).getHeuristicFinalCost(), 3);
+    });
 
-  //   it("'jellyifhs' -> 'jellyfish' (width 1) = 2", function() {
-  //     // Technically a heuristic here, but it gets the right value b/c all changes are on the diagonal.
-  //     assert.equal(compute("jellyifhs", "jellyfish", "InputThenMatch").getHeuristicFinalCost(), 2);
-  //     assert.equal(compute("jellyifhs", "jellyfish", "MatchThenInput").getHeuristicFinalCost(), 2);
-  //   });
+    it("'jellyifhs' -> 'jellyfish' (width 1) = 2", function() {
+      // Technically a heuristic here, but it gets the right value b/c all changes are on the diagonal.
+      assert.equal(compute("jellyifhs", "jellyfish", "InputThenMatch").getHeuristicFinalCost(), 2);
+      assert.equal(compute("jellyifhs", "jellyfish", "MatchThenInput").getHeuristicFinalCost(), 2);
+    });
 
-  //   // Two transpositions:  abc -> ca, ig <- ghi.  Also, one deletion:  'd'.
-  //   it("'abcdefig' -> 'caefghi' (width 1) = 7", function() {
-  //     let buffer = compute("abcdefig", "caefghi", "InputThenMatch");
-  //     // This test case was constructed with the tranposition parts outside of the center diagonal.  
-  //     assert.equal(buffer.getHeuristicFinalCost(), 7);
-  //   });
+    // Two transpositions:  abc -> ca, ig <- ghi.  Also, one deletion:  'd'.
+    it("'abcdefig' -> 'caefghi' (width 1) = 7", function() {
+      let buffer = compute("abcdefig", "caefghi", "InputThenMatch");
+      // This test case was constructed with the tranposition parts outside of the center diagonal.  
+      assert.equal(buffer.getHeuristicFinalCost(), 7);
+    });
 
-  //   // Two transpositions:  abc -> ca, ig <- ghi.  Also, one deletion:  'd'.
-  //   it("'abcdefig' -> 'caefghi' (width 2) = 5", function() {
-  //     let buffer = compute("abcdefig", "caefghi", "InputThenMatch", 2);
-  //     assert.equal(buffer.getHeuristicFinalCost(), 5);
-  //   });
-  // });
+    // Two transpositions:  abc -> ca, ig <- ghi.  Also, one deletion:  'd'.
+    it("'abcdefig' -> 'caefghi' (width 2) = 5", function() {
+      let buffer = compute("abcdefig", "caefghi", "InputThenMatch", 2);
+      assert.equal(buffer.getHeuristicFinalCost(), 5);
+    });
+  });
 
-  // describe("Diagonal extension tests", function() {
-  //   it("'aadddres' -> 'address' (width 1->2) = 3", function() {
-  //     // If diagonal set to '1', cost is reported as 4.
-  //     let buffer = compute("aadddres", "address", "InputThenMatch", 1);
-  //     assert.equal(buffer.getHeuristicFinalCost(), 4);
+  describe("Diagonal extension tests", function() {
+    it("'aadddres' -> 'address' (width 1->2) = 3", function() {
+      // If diagonal set to '1', cost is reported as 4.
+      let buffer = compute("aadddres", "address", "InputThenMatch", 1);
+      assert.equal(buffer.getHeuristicFinalCost(), 4);
 
-  //     // 1 -> 2
-  //     buffer = buffer.increaseMaxDistance();
-  //     assert.equal(buffer.getHeuristicFinalCost(), 3);
-  //   });
+      // 1 -> 2
+      buffer = buffer.increaseMaxDistance();
+      assert.equal(buffer.getHeuristicFinalCost(), 3);
+    });
 
   //   // Two transpositions:  abc -> ca, ig <- ghi.  Also, one deletion:  'd'.
   //   it("'abcdefig' -> 'caefghi' (width 1->2) = 5", function() {
@@ -213,7 +214,7 @@ describe('Sparsified Damerau-Levenshtein implementation checks', function() {
   //     buffer = buffer.increaseMaxDistance();
   //     assert.equal(buffer.getHeuristicFinalCost(), 5);
   //   });
-  // });
+  });
 
   
   // describe("Bounded final cost tests", function() {

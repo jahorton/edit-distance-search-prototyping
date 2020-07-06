@@ -1,6 +1,20 @@
 var assert = require('chai').assert;
 var DiagonalizedIterativeDamerauLevenshteinCalculation = require('../../dist').secondIterativeImplementation;
 
+function prettyPrintMatrix(matrix) {
+  for(let r = 0; r < matrix.length; r++) {
+    console.log(JSON.stringify(matrix[r], function(key, value) {
+      if(value == Number.MAX_VALUE) {
+        return "MAX";
+      } else if(value === undefined) {
+        return -1;
+      } else {
+        return value;
+      }
+    }));
+  }
+}
+
 function compute(input, match, mode, bandSize) {
   let buffer = new DiagonalizedIterativeDamerauLevenshteinCalculation();
 
@@ -35,19 +49,6 @@ function compute(input, match, mode, bandSize) {
     default:
       throw "Invalid test mode specified!"
   }
-
-  // Pretty-printing for the buffer:
-  // for(let r = 0; r < buffer.resolvedDistances.length; r++) {
-  //   console.log(JSON.stringify(buffer.resolvedDistances[r], function(key, value) {
-  //     if(value == Number.MAX_VALUE) {
-  //       return "MAX";
-  //     } else if(value === undefined) {
-  //       return -1;
-  //     } else {
-  //       return value;
-  //     }
-  //   }));
-  //}
 
   return buffer;
 }
@@ -199,6 +200,7 @@ describe('Diagonalized Damerau-Levenshtein implementation checks', function() {
 
       // 1 -> 2
       buffer = buffer.increaseMaxDistance();
+      prettyPrintMatrix(buffer.resolvedDistances);
       assert.equal(buffer.getHeuristicFinalCost(), 3);
     });
 
