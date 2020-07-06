@@ -1,9 +1,11 @@
-// Not exactly optimized, but a proof-of-concept 'online'/iterative Damerau-Levenshtein calculator with the following features:
+// A semi-optimized proof-of-concept 'online'/iterative Damerau-Levenshtein calculator with the following features:
 // - may add new character to the 'input' string or to the 'match' string, reusing all old calculations efficiently.
 // - allows a 'focused' evaluation that seeks if the edit distance is within a specific range.  Designed for use in match-searching,
 //   where we want to find the 'closest' matching strings in a lexicon.
 // - towards such a match-searching algorithm/heuristic: should nothing be found within that range, all prior calculations may be reused
 //   to search across the lexicon with an incremented edit distance.
+// - minimized memory footprint: O(m) memory footprint (where m = length of 'input' string), rather than O(mn) (where n = length of 'match' string)
+//   - guaranteed to use a smaller footprint than DiagonalizedIterativeDamerauLevenshteinCalculation.
 //
 // In short:  Used to optimize calculations for low edit-distance checks, then expanded if/as necessary
 //            if a greater edit distance is requested.
