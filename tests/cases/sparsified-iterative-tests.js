@@ -191,6 +191,25 @@ describe('Sparsified Damerau-Levenshtein implementation checks', function() {
       let buffer = compute("abcdefig", "caefghi", "InputThenMatch", 2);
       assert.equal(buffer.getHeuristicFinalCost(), 5);
     });
+
+    // Two transpositions:  abc -> ca, ig <- ghi.  Also, one deletion:  'd'.
+    it("'abcdefigj' -> 'caefghij' (width 1) = 7", function() {
+      let buffer = compute("abcdefigj", "caefghij", "InputThenMatch", 1);
+      assert.equal(buffer.getHeuristicFinalCost(), 7);
+    });
+
+    // Two transpositions:  abc -> ca, ig <- ghi.  Also, one deletion:  'd'.
+    it("'abcdefigj' -> 'caefghij' (width 2) = 5", function() {
+      let buffer = compute("abcdefigj", "caefghij", "InputThenMatch", 2);
+      assert.equal(buffer.getHeuristicFinalCost(), 5);
+    });
+    
+    // A single transposition, early in the string:  abc -> ca.  Also, one deletion:  'd'.
+    // Width 1 check returns Number.MAX_VALUE due to length differences.
+    it("'abcdef' -> 'caef' (width 2) = 3", function() {
+      let buffer = compute("abcdef", "caef", "InputThenMatch", 2);
+      assert.equal(buffer.getHeuristicFinalCost(), 3);
+    });
   });
 
   describe("Diagonal extension tests", function() {
@@ -214,6 +233,29 @@ describe('Sparsified Damerau-Levenshtein implementation checks', function() {
       buffer = buffer.increaseMaxDistance();
       assert.equal(buffer.getHeuristicFinalCost(), 5);
     });
+
+    // Two transpositions:  abc -> ca, ig <- ghi.  Also, one deletion:  'd'.
+    it("'abcdefigj' -> 'caefghij' (width 1->2) = 5", function() {
+      let buffer = compute("abcdefigj", "caefghij", "InputThenMatch", 1);
+      // This test case was constructed with the tranposition parts outside of the center diagonal.  
+      assert.equal(buffer.getHeuristicFinalCost(), 7);
+
+      // 1 -> 2
+      buffer = buffer.increaseMaxDistance();
+      assert.equal(buffer.getHeuristicFinalCost(), 5);
+    });
+
+    
+    // A single transposition, early in the string:  abc -> ca.  Also, one deletion:  'd'.
+    it("'abcdef' -> 'caef' (width 1->2) = 5", function() {
+      let buffer = compute("abcdef", "caef", "InputThenMatch", 1);
+      // This test case was constructed with the tranposition parts outside of the center diagonal.  
+      assert.equal(buffer.getHeuristicFinalCost(), 5);
+
+      // 1 -> 2
+      buffer = buffer.increaseMaxDistance();
+      assert.equal(buffer.getHeuristicFinalCost(), 3);
+    });     
   });
 
   
