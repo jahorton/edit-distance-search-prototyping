@@ -206,8 +206,8 @@ describe('Sparsified Damerau-Levenshtein implementation checks', function() {
     
     // A single transposition, early in the string:  abc -> ca.  Also, one deletion:  'd'.
     // Width 1 check returns Number.MAX_VALUE due to length differences.
-    it("'abcdef' -> 'caef' (width 2) = 3", function() {
-      let buffer = compute("abcdef", "caef", "InputThenMatch", 2);
+    it("'abcdef' -> 'daef' (width 2) = 3", function() {
+      let buffer = compute("abcdef", "daef", "InputThenMatch", 2);
       assert.equal(buffer.getHeuristicFinalCost(), 3);
     });
   });
@@ -247,10 +247,10 @@ describe('Sparsified Damerau-Levenshtein implementation checks', function() {
 
     
     // A single transposition, early in the string:  abc -> ca.  Also, one deletion:  'd'.
-    it("'abcdef' -> 'caef' (width 1->2) = 5", function() {
-      let buffer = compute("abcdef", "caef", "InputThenMatch", 1);
+    it("'abcdef' -> 'daef' (width 1->2) = 3", function() {
+      let buffer = compute("abcdef", "daef", "InputThenMatch", 1);
       // This test case was constructed with the tranposition parts outside of the center diagonal.  
-      assert.equal(buffer.getHeuristicFinalCost(), 5);
+      assert.equal(buffer.getHeuristicFinalCost(), Number.MAX_VALUE);
 
       // 1 -> 2
       buffer = buffer.increaseMaxDistance();
