@@ -302,7 +302,7 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
         // daisy-chain possible updates
 
         // cell (r+1, c):  new deletion source
-        if(r < returnBuffer.inputSequence.length) {
+        if(r < returnBuffer.inputSequence.length - 1) {
           // We propagate the new added cost (via deletion) to the old right-most cell, which is one to our right.
           returnBuffer.resolvedDistances[r+1][2 * this.diagonalWidth] = Math.min(returnBuffer.resolvedDistances[r+1][2 * this.diagonalWidth], addedCost+1);
 

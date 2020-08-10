@@ -202,12 +202,26 @@ describe('Diagonalized Damerau-Levenshtein implementation checks', function() {
       let buffer = compute("abcdefigj", "caefghij", "InputThenMatch", 2);
       assert.equal(buffer.getHeuristicFinalCost(), 5);
     });
-    
-    // A single transposition, early in the string:  abc -> ca.  Also, one deletion:  'd'.
-    // Width 1 check returns Number.MAX_VALUE due to length differences.
-    it("'abcdef' -> 'daef' (width 2) = 3", function() {
-      let buffer = compute("abcdef", "daef", "InputThenMatch", 2);
-      assert.equal(buffer.getHeuristicFinalCost(), 3);
+
+    // Two transpositions:  abcd -> da, zx <- xyz and one deletion ('g')
+    // The intermediate 'ef[g]hi' ensures that the two transpositions are kept separate.
+    it("'abcdefghizx' -> 'daefhixyz' (width 2) = 7", function() {
+      let buffer = compute("abcdefghizx", "daefhixyz", "InputThenMatch", 2);
+      assert.equal(buffer.getHeuristicFinalCost(), 8);
+    });
+
+    // Two transpositions:  abcd -> da, zx <- xyz and one deletion ('g')
+    // The intermediate 'ef[g]hi' ensures that the two transpositions are kept separate.
+    it("'abcdefghizx' -> 'daefhixyz' (width 3) = 6", function() {
+      let buffer = compute("abcdefghizx", "daefhixyz", "InputThenMatch", 3);
+      assert.equal(buffer.getHeuristicFinalCost(), 6);
+    });
+
+    // Two transpositions:  abcd -> da, zw <- wxyz and two deletions ('gh')
+    // The intermediate deletions help to ensure that the two transpositions are kept separate.
+    it("'abcdefijzw' -> 'daefghijwxyz' (width 2) = 8", function() {
+      let buffer = compute("abcdefijzw", "daefghijwxyz", "InputThenMatch", 2);
+      assert.equal(buffer.getHeuristicFinalCost(), 8);
     });
   });
 
@@ -236,24 +250,52 @@ describe('Diagonalized Damerau-Levenshtein implementation checks', function() {
     // Two transpositions:  abc -> ca, ig <- ghi.  Also, one deletion:  'd'.
     it("'abcdefigj' -> 'caefghij' (width 1->2) = 5", function() {
       let buffer = compute("abcdefigj", "caefghij", "InputThenMatch", 1);
-      // This test case was constructed with the tranposition parts outside of the center diagonal.  
+      // This test case was constructed with the tranposition parts outside of the center diagonal.
       assert.equal(buffer.getHeuristicFinalCost(), 7);
 
       // 1 -> 2
       buffer = buffer.increaseMaxDistance();
       assert.equal(buffer.getHeuristicFinalCost(), 5);
     });
-    
-    // A single transposition, early in the string:  abcd -> da.
-    it("'abcdef' -> 'daef' (width 1->2) = 3", function() {
-      let buffer = compute("abcdef", "daef", "InputThenMatch", 1);
-      // This test case was constructed with the tranposition parts outside of the center diagonal.  
+
+    // Two transpositions:  abcd -> da, zx <- xyz and one deletion ('g')
+    // The intermediate 'ef[g]hi' ensures that the two transpositions are kept separate.
+    it("'abcdefghizx' -> 'daefhixyz' (width 1->2) = 8", function() {
+      let buffer = compute("abcdefghizx", "daefhixyz", "InputThenMatch", 1);
       assert.equal(buffer.getHeuristicFinalCost(), Number.MAX_VALUE);
 
       // 1 -> 2
       buffer = buffer.increaseMaxDistance();
-      assert.equal(buffer.getHeuristicFinalCost(), 3);
-    }); 
+      assert.equal(buffer.getHeuristicFinalCost(), 8);
+    });
+
+    // Two transpositions:  abcd -> da, zx <- xyz and one deletion ('g')
+    // The intermediate 'ef[g]hi' ensures that the two transpositions are kept separate.
+    it("'abcdefghizx' -> 'daefhixyz' (width 2->3) = 6", function() {
+      let buffer = compute("abcdefghizx", "daefhixyz", "InputThenMatch", 2);
+      assert.equal(buffer.getHeuristicFinalCost(), 8);
+
+      // 2 -> 3
+      buffer = buffer.increaseMaxDistance();
+      assert.equal(buffer.getHeuristicFinalCost(), 6);
+    });
+    
+    // Two transpositions:  abcd -> da, zw <- wxyz and two deletions ('gh')
+    // The intermediate deletions help to ensure that the two transpositions are kept separate.
+    it("'abcdefijzw' -> 'daefghijwxyz' (width 1->2) = 8", function() {
+      // Relies on a propagated insertion.
+      let buffer = compute("abcdefijzw", "daefghijwxyz", "InputThenMatch", 1);
+      assert.equal(buffer.getHeuristicFinalCost(), Number.MAX_VALUE);
+
+      // 1 -> 2
+      buffer = buffer.increaseMaxDistance();
+      assert.equal(buffer.getHeuristicFinalCost(), 8);
+    });
+
+    // Very difficult to construct a proper test for edit-distance propagation via transpositions;
+    // all my current attempts get resolved by the other propagations instead!
+    //
+    // They're the reason for some of the obnoxious strings seen above.
   });
 
   
