@@ -157,13 +157,21 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
     return false;
   }
 
-  private static computeBaseCostAt(buffer: SparsifiedIterativeDamerauLevenshteinCalculation, r: number, c: number, insertCost?: number, deleteCost?: number) {
+  private static initialCostAt(buffer: SparsifiedIterativeDamerauLevenshteinCalculation, r: number, c: number, insertCost?: number, deleteCost?: number) {
     var baseSubstitutionCost = buffer.inputSequence[r] == buffer.matchSequence[c] ? 0 : 1;
     var substitutionCost: number = buffer.getCostAt(r-1, c-1) + baseSubstitutionCost;
     var insertionCost: number = insertCost || buffer.getCostAt(r, c-1) + 1; // If set meaningfully, will never equal zero.
     var deletionCost: number = deleteCost || buffer.getCostAt(r-1, c) + 1;  // If set meaningfully, will never equal zero.
+    var transpositionCost: number = Number.MAX_VALUE
 
-    return Math.min(substitutionCost, deletionCost, insertionCost);
+    if(r > 0 && c > 0) { // bypass when transpositions are known to be impossible.
+      // Transposition checks
+      let lastInputIndex = buffer.inputSequence.lastIndexOf(buffer.matchSequence[c], r-1);
+      let lastMatchIndex = buffer.matchSequence.lastIndexOf(buffer.inputSequence[r], c-1);
+      transpositionCost = buffer.getCostAt(lastInputIndex-1, lastMatchIndex-1) + (r - lastInputIndex - 1) + 1 + (c - lastMatchIndex - 1);
+    }
+
+    return Math.min(substitutionCost, deletionCost, insertionCost, transpositionCost);
   }
 
   // Inputs add an extra row / first index entry.
@@ -189,23 +197,11 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
     // devirtualizes the bound, ensures the max index lies within the 'diagonal'.
     cMax = (cMax > 2 * returnBuffer.diagonalWidth) ? 2 * returnBuffer.diagonalWidth : cMax;
 
-    let firstEntry = true;
     for(; c <= cMax; c++) {
       // What is the true (virtual) index represented by this entry in the diagonal?
       let trueColIndex = c + r - returnBuffer.diagonalWidth;
 
-      row[c] = SparsifiedIterativeDamerauLevenshteinCalculation.computeBaseCostAt(returnBuffer, r, trueColIndex);
-      
-      if(r > 0 && trueColIndex > 0) { // bypass when transpositions are known to be impossible.
-        // Transposition checks
-        let lastInputIndex = r > 0 ? this.inputSequence.lastIndexOf(returnBuffer.matchSequence[trueColIndex], r-1) : -1;
-        let lastMatchIndex = c > 0 ? this.matchSequence.lastIndexOf(returnBuffer.inputSequence[r], trueColIndex-1) : -1;
-        let transpositionCost = this.getCostAt(lastInputIndex-1, lastMatchIndex-1) + (r - lastInputIndex - 1) + 1 + (trueColIndex - lastMatchIndex - 1);
-
-        row[c] = row[c] < transpositionCost ? row[c] : transpositionCost;
-      }
-
-      firstEntry = false;
+      row[c] = SparsifiedIterativeDamerauLevenshteinCalculation.initialCostAt(returnBuffer, r, trueColIndex);
     }
 
     return returnBuffer;
@@ -232,16 +228,7 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
       let cIndexInRow = c - r + this.diagonalWidth;
       
       var row = returnBuffer.resolvedDistances[r];
-      row[cIndexInRow] = SparsifiedIterativeDamerauLevenshteinCalculation.computeBaseCostAt(returnBuffer, r, c);
-
-      // Fortunately, r IS the true row index.  This'll be easier than addInputChar's variation.
-      if(r > 0 && c > 0) { // bypass when transpositions are known to be impossible.
-        // Transposition checks
-        let lastInputIndex = r > 0 ? this.inputSequence.lastIndexOf(returnBuffer.matchSequence[c], r-1) : -1;
-        let lastMatchIndex = c > 0 ? this.matchSequence.lastIndexOf(returnBuffer.inputSequence[r], c-1) : -1;
-        let transpositionCost = this.getCostAt(lastInputIndex-1, lastMatchIndex-1) + (r - lastInputIndex - 1) + 1 + (c - lastMatchIndex - 1);
-        row[cIndexInRow] = row[cIndexInRow] < transpositionCost ? row[cIndexInRow] : transpositionCost;
-      }
+      row[cIndexInRow] = SparsifiedIterativeDamerauLevenshteinCalculation.initialCostAt(returnBuffer, r, c);
     }
 
     return returnBuffer;
@@ -261,20 +248,9 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
       if(c >= 0) {
         // If c == 0, cell is at edge, thus a known value for insertions exists.
         // Base cost: r+1, +1 for inserting.
-        let insertionCost = c == 0 ? r + 2 : undefined
+        let insertionCost = c == 0 ? r + 2 : Number.MAX_VALUE;
         // compute new left cell
-        leftCell = SparsifiedIterativeDamerauLevenshteinCalculation.computeBaseCostAt(returnBuffer, r, c, insertionCost, undefined);
-
-        var transpositionCost: number = Number.MAX_VALUE;
-  
-        if(c > 0) {
-          // Transposition checks.  Only possible if there exists at least one (true) column before the current cell.
-          let lastInputIndex = r > 0 ? this.inputSequence.lastIndexOf(returnBuffer.matchSequence[c], r-1) : -1;
-          let lastMatchIndex = c > 0 ? this.matchSequence.lastIndexOf(returnBuffer.inputSequence[r], c-1) : -1;
-          let transpositionCost = this.getCostAt(lastInputIndex-1, lastMatchIndex-1) + (r - lastInputIndex - 1) + 1 + (c - lastMatchIndex - 1);
-          leftCell = leftCell < transpositionCost ? leftCell : transpositionCost;
-        }
-
+        leftCell = SparsifiedIterativeDamerauLevenshteinCalculation.initialCostAt(returnBuffer, r, c, insertionCost, undefined);
         let addedCost = leftCell;
 
         // daisy-chain possible updates
@@ -314,22 +290,13 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
       if(c < returnBuffer.matchSequence.length) {
         // If r == 0, cell is at edge, thus a known value for insertions exists.
         // Base cost: c+1, +1 for inserting.
-        let deletionCost = r == 0 ? c + 2 : undefined;
+        let deletionCost = r == 0 ? c + 2 : Number.MAX_VALUE;
 
         // the current row wants to use adjusted diagonal width; we must specify use of the old width & its mapping instead.
         var insertionCost: number = returnBuffer.getCostAt(r, c-1, this.diagonalWidth) + 1;
 
         // compute new right cell
-        let rightCell = SparsifiedIterativeDamerauLevenshteinCalculation.computeBaseCostAt(returnBuffer, r, c, insertionCost, deletionCost);
-  
-        if(r > 0) {
-          // Transposition checks.  Only possible if there exists at least one (true) row before the current cell.
-          let lastInputIndex = r > 0 ? this.inputSequence.lastIndexOf(returnBuffer.matchSequence[c], r-1) : -1;
-          let lastMatchIndex = c > 0 ? this.matchSequence.lastIndexOf(returnBuffer.inputSequence[r], c-1) : -1;
-          let transpositionCost = this.getCostAt(lastInputIndex-1, lastMatchIndex-1) + (r - lastInputIndex - 1) + 1 + (c - lastMatchIndex - 1);
-          rightCell = rightCell < transpositionCost ? rightCell : transpositionCost;
-        }
-
+        let rightCell = SparsifiedIterativeDamerauLevenshteinCalculation.initialCostAt(returnBuffer, r, c, insertionCost, deletionCost);
         let addedCost = rightCell;
 
         // daisy-chain possible updates
