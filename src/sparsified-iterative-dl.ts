@@ -258,7 +258,7 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
         // cell (r, c+1):  new insertion source
         if(c < returnBuffer.matchSequence.length-1) {
           // We propagate the new added cost (via insertion) to the old left-most cell, which is one to our right.
-          returnBuffer.resolvedDistances[r][0] = Math.min(returnBuffer.resolvedDistances[r][0], addedCost+1);
+          SparsifiedIterativeDamerauLevenshteinCalculation.propagateUpdateFrom(returnBuffer, r, c+1, addedCost+1, 0);
 
           // Only possible if insertions are also possible AND more conditions are met.
           // cells (r+2, * > c+2):  new transposition source
@@ -274,11 +274,11 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
             let colCap = 2 * this.diagonalWidth + 1;
             colCap = (colCap < returnBuffer.matchSequence.length - startOffset) ? colCap: (returnBuffer.matchSequence.length - startOffset);
 
-            for(let transposeCol = 0; transposeCol < colCap; transposeCol++) {
+            for(let transposeCol = 0; transposeCol < colCap; transposeCol++) {  // Really, it's the index within the diagonal here.
               if(returnBuffer.matchSequence[startOffset + transposeCol] == rowChar) {
                 // update time!  Note that the row's contribution to the cost is always 0 here.
                 let updatedTranspositionCost = addedCost + transposeCol /* col shift count */ + 2;  // Because (r+2, c+3) is root, not (r+2, c+2).
-                returnBuffer.resolvedDistances[transposeRow][transposeCol] = Math.min(returnBuffer.resolvedDistances[transposeRow][transposeCol], updatedTranspositionCost);
+                SparsifiedIterativeDamerauLevenshteinCalculation.propagateUpdateFrom(returnBuffer, transposeRow, transposeCol + startOffset , updatedTranspositionCost, transposeCol);
               }
             }
           }
@@ -296,7 +296,7 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
         var insertionCost: number = returnBuffer.getCostAt(r, c-1, this.diagonalWidth) + 1;
 
         // compute new right cell
-        let rightCell = SparsifiedIterativeDamerauLevenshteinCalculation.initialCostAt(returnBuffer, r, c, insertionCost, deletionCost);
+        rightCell = SparsifiedIterativeDamerauLevenshteinCalculation.initialCostAt(returnBuffer, r, c, insertionCost, deletionCost);
         let addedCost = rightCell;
 
         // daisy-chain possible updates
@@ -304,7 +304,7 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
         // cell (r+1, c):  new deletion source
         if(r < returnBuffer.inputSequence.length - 1) {
           // We propagate the new added cost (via deletion) to the old right-most cell, which is one to our right.
-          returnBuffer.resolvedDistances[r+1][2 * this.diagonalWidth] = Math.min(returnBuffer.resolvedDistances[r+1][2 * this.diagonalWidth], addedCost+1);
+          SparsifiedIterativeDamerauLevenshteinCalculation.propagateUpdateFrom(returnBuffer, r+1, c, addedCost + 1, 2 * this.diagonalWidth);
 
           // Only possible if deletions are also possible AND more conditions are met.
           // cells(* > r+2, c+2): new transposition source
@@ -319,11 +319,12 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
             // Calculate the number of valid entries within the diagonal - only these are updatable.  (The excluded ones from the 'new diagonal' don't exist yet.)
             let rowCap = 2 * this.diagonalWidth + 1;
             rowCap = (rowCap < returnBuffer.inputSequence.length - startOffset) ? rowCap: (returnBuffer.inputSequence.length - startOffset);
-            for(let transposeRow = 0; transposeRow < rowCap; transposeRow++) {
+            let diagonalIndex = (r - c - 1);
+            for(let transposeRow = 0; transposeRow < rowCap && diagonalIndex >= 0; transposeRow++, diagonalIndex--) {
               if(returnBuffer.inputSequence[transposeRow] == colChar) {
                 // update time!  Note that the col's contribution to the cost is always 0 here.
                 let updatedTranspositionCost = addedCost + transposeRow + 2;  // Because (r+3, c+2) is root, not (r+2, c+2).
-                returnBuffer.resolvedDistances[transposeRow][transposeCol] = Math.min(returnBuffer.resolvedDistances[transposeRow][transposeCol], updatedTranspositionCost);
+                SparsifiedIterativeDamerauLevenshteinCalculation.propagateUpdateFrom(returnBuffer, transposeRow + startOffset, transposeCol, updatedTranspositionCost, diagonalIndex);
               }
             }
           }
@@ -335,5 +336,46 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
     }
 
     return returnBuffer;
+  }
+
+  private static propagateUpdateFrom(buffer: SparsifiedIterativeDamerauLevenshteinCalculation, r: number, c: number, value: number, diagonalIndex: number) {
+    // Note:  this function does not actually need the `c` parameter!
+    //        That said, it's very useful when tracing stack traces & debugging.
+    if(value < buffer.resolvedDistances[r][diagonalIndex]) {
+      buffer.resolvedDistances[r][diagonalIndex] = value;
+    } else {
+      return
+    }
+
+    let internalRow = r < buffer.inputSequence.length - 1;
+    let internalCol = c < buffer.matchSequence.length - 1;
+
+    // We have to compensate for the current & following rows not having been expanded yet.
+    if(diagonalIndex < 2 * (buffer.diagonalWidth - 1) && internalCol) {
+      // We've inserted to the left of an existing calculation - check for propagation via insertion.
+      let updateCost = value + 1;
+      this.propagateUpdateFrom(buffer, r, c+1, updateCost, diagonalIndex+1);
+    }
+
+    if(diagonalIndex > 0 && internalRow) {
+      // We've inserted above an existing calculation - check for propagation via deletion
+      let updateCost = value + 1
+      this.propagateUpdateFrom(buffer, r+1, c, updateCost, diagonalIndex-1);
+    }
+
+    // If both, check for propagation via substitution
+    if(internalRow && internalCol) {
+      let updateCost = value + (buffer.inputSequence[r+1] == buffer.matchSequence[c+1] ? 0 : 1);
+      this.propagateUpdateFrom(buffer, r+1, c+1, updateCost, diagonalIndex);
+    }
+
+    // Propagating transpositions
+    let nextInputIndex = buffer.inputSequence.indexOf(buffer.matchSequence[c+1], r+2);
+    let nextMatchIndex = buffer.matchSequence.indexOf(buffer.inputSequence[r+1], c+2);
+
+    if(nextInputIndex > 0 && nextMatchIndex > 0) {
+      let transpositionCost = value + (nextInputIndex - r - 2) + 1 + (nextMatchIndex - c - 2);
+      this.propagateUpdateFrom(buffer, nextInputIndex, nextMatchIndex, transpositionCost, (buffer.diagonalWidth - 1) + nextMatchIndex - nextInputIndex);
+    }
   }
 }
