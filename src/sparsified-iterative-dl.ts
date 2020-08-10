@@ -95,9 +95,7 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
     }
 
     let index = this.getTrueIndex(i, j, width);
-    let val = index.sparse ? undefined : this.resolvedDistances[index.row][index.col];
-    
-    return val === undefined ? Number.MAX_VALUE : val;
+    return index.sparse ? Number.MAX_VALUE : this.resolvedDistances[index.row][index.col];
   }
 
   /**
@@ -146,6 +144,11 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
         buffer = buffer.increaseMaxDistance();
         guaranteedBound++;
         val = buffer.getHeuristicFinalCost();
+      } else if(guaranteedBound > Math.max(this.inputSequence.length, this.matchSequence.length)) {
+        // In case of excessively-high thresholds, we simply note that the final cost can never exceed
+        // the length of the longer input sequence.  (Substitute all characters, then insert / delete
+        // to reach the length of the longer string.)
+        return false;
       } else {
         break;
       }
@@ -162,7 +165,8 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
     returnBuffer.inputSequence.push(char);
 
     // Insert a row, even if we don't actually do anything with it yet.
-    let row = Array(2 * returnBuffer.diagonalWidth + 1);
+    // Initialize all entries with Number.MAX_VALUE, as `undefined` use leads to JS math issues.
+    let row = Array(2 * returnBuffer.diagonalWidth + 1).fill(Number.MAX_VALUE);
     returnBuffer.resolvedDistances[r] = row;
 
     // If there isn't a 'match' entry yet, there are no values to compute.  Exit immediately.
@@ -219,7 +223,6 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
     // devirtualizes the bound, ensures the max index lies within the 'diagonal'.
     rMax = (rMax > c + returnBuffer.diagonalWidth) ? c + returnBuffer.diagonalWidth : rMax;
 
-    let firstEntry = true;
     for(; r <= rMax; r++) {
       let cIndexInRow = c - r + this.diagonalWidth;
       
@@ -240,8 +243,6 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
       }
 
       row[cIndexInRow] = Math.min(substitutionCost, insertionCost, deletionCost, transpositionCost);
-
-      firstEntry = false;
     }
 
     return returnBuffer;
@@ -255,7 +256,6 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
       return returnBuffer;
     }
 
-    // Currently under development.
     for(let r = 0; r < returnBuffer.inputSequence.length; r++) {
       let leftCell = Number.MAX_VALUE;
       let c = r - returnBuffer.diagonalWidth // External index of the left-most entry, which we will now calculate.
