@@ -224,6 +224,24 @@ describe('Sparsified Damerau-Levenshtein implementation checks', function() {
       let buffer = compute("abcdefijzw", "daefghijwxyz", "InputThenMatch", 2);
       assert.equal(buffer.getHeuristicFinalCost(), 8);
     });
+
+    // One transposition:  da <- abcd, one insertion ('g'), and two deletions ('yz').
+    it("'daefhiwxyz' -> 'abcdefghiyz' (width 1) = 9", function() {
+      let buffer = compute("daefhiwxyz", "abcdefghiyz", "InputThenMatch", 1);
+      assert.equal(buffer.getHeuristicFinalCost(), 9);
+    });
+
+    // One transposition:  da <- abcd, one insertion ('g'), and two deletions ('yz').
+    it("'daefhiwxyz' -> 'abcdefghiyz' (width 2) = 7", function() {
+      let buffer = compute("daefhiwxyz", "abcdefghiyz", "InputThenMatch", 2);
+      assert.equal(buffer.getHeuristicFinalCost(), 7);
+    });
+
+    // One transposition:  da <- abcd, one insertion ('g'), and two deletions ('yz').
+    it("'daefhiwxyz' -> 'abcdefghiyz' (width 3) = 6", function() {
+      let buffer = compute("daefhiwxyz", "abcdefghiyz", "InputThenMatch", 3);
+      assert.equal(buffer.getHeuristicFinalCost(), 6);
+    });
   });
 
   describe("Diagonal extension tests", function() {
@@ -293,6 +311,7 @@ describe('Sparsified Damerau-Levenshtein implementation checks', function() {
       assert.equal(buffer.getHeuristicFinalCost(), 8);
     });
 
+
     // Two transpositions:  da <- abcd, wxyz -> zw and one deletion ('g')
     it("'daefghiwxyz' -> 'abcdefhizw' (width 1->2) = 7", function() {
       // Relies on a propagated transposition and multiple propagated substitutions.
@@ -303,6 +322,21 @@ describe('Sparsified Damerau-Levenshtein implementation checks', function() {
       // 1 -> 2
       buffer = buffer.increaseMaxDistance();
       assert.equal(buffer.getHeuristicFinalCost(), 7);
+    });
+
+    // One transposition:  da <- abcd, one insertion ('g'), and two deletions ('yz').
+    it("'daefhiwxyz' -> 'abcdefghiyz' (width 1->3) = 6", function() {
+      let buffer = compute("daefhiwxyz", "abcdefghiyz", "InputThenMatch", 1);
+      assert.equal(buffer.getHeuristicFinalCost(), 9);
+
+      // 1 -> 2
+      buffer = buffer.increaseMaxDistance();
+      assert.equal(buffer.getHeuristicFinalCost(), 7);
+
+      // 2 -> 3
+      // relies on a propagated deletion!
+      buffer = buffer.increaseMaxDistance();
+      assert.equal(buffer.getHeuristicFinalCost(), 6);
     });
   });
 
@@ -318,7 +352,6 @@ describe('Sparsified Damerau-Levenshtein implementation checks', function() {
       assert.isTrue(buffer.hasFinalCostWithin(3));
     })
 
-    
     it("'adddress' -> 'address' does not have final cost within 2", function() {
       let buffer = compute("aadddres", "address", "InputThenMatch");
       assert.isFalse(buffer.hasFinalCostWithin(2));

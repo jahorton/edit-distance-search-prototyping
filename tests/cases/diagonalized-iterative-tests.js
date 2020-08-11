@@ -223,6 +223,24 @@ describe('Diagonalized Damerau-Levenshtein implementation checks', function() {
       let buffer = compute("abcdefijzw", "daefghijwxyz", "InputThenMatch", 2);
       assert.equal(buffer.getHeuristicFinalCost(), 8);
     });
+
+    // One transposition:  da <- abcd, one insertion ('g'), and two deletions ('yz').
+    it("'daefhiwxyz' -> 'abcdefghiyz' (width 1) = 9", function() {
+      let buffer = compute("daefhiwxyz", "abcdefghiyz", "InputThenMatch", 1);
+      assert.equal(buffer.getHeuristicFinalCost(), 9);
+    });
+
+    // One transposition:  da <- abcd, one insertion ('g'), and two deletions ('yz').
+    it("'daefhiwxyz' -> 'abcdefghiyz' (width 2) = 7", function() {
+      let buffer = compute("daefhiwxyz", "abcdefghiyz", "InputThenMatch", 2);
+      assert.equal(buffer.getHeuristicFinalCost(), 7);
+    });
+
+    // One transposition:  da <- abcd, one insertion ('g'), and two deletions ('yz').
+    it("'daefhiwxyz' -> 'abcdefghiyz' (width 3) = 6", function() {
+      let buffer = compute("daefhiwxyz", "abcdefghiyz", "InputThenMatch", 3);
+      assert.equal(buffer.getHeuristicFinalCost(), 6);
+    });
   });
 
   describe("Diagonal extension tests", function() {
@@ -302,6 +320,21 @@ describe('Diagonalized Damerau-Levenshtein implementation checks', function() {
       // 1 -> 2
       buffer = buffer.increaseMaxDistance();
       assert.equal(buffer.getHeuristicFinalCost(), 7);
+    });
+
+    // One transposition:  da <- abcd, one insertion ('g'), and two deletions ('yz').
+    it("'daefhiwxyz' -> 'abcdefghiyz' (width 1->3) = 6", function() {
+      let buffer = compute("daefhiwxyz", "abcdefghiyz", "InputThenMatch", 1);
+      assert.equal(buffer.getHeuristicFinalCost(), 9);
+
+      // 1 -> 2
+      buffer = buffer.increaseMaxDistance();
+      assert.equal(buffer.getHeuristicFinalCost(), 7);
+
+      // 2 -> 3
+      // relies on a propagated deletion!
+      buffer = buffer.increaseMaxDistance();
+      assert.equal(buffer.getHeuristicFinalCost(), 6);
     });
   });
 

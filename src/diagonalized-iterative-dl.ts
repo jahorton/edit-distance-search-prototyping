@@ -288,6 +288,7 @@ class DiagonalizedIterativeDamerauLevenshteinCalculation {
   private static propagateUpdateFrom(buffer: DiagonalizedIterativeDamerauLevenshteinCalculation, r: number, c: number, value: number, diagonalIndex: number) {
     if(value < buffer.resolvedDistances[r+2][c+2]) {
       buffer.resolvedDistances[r+2][c+2] = value;
+      console.log("Update @ (" + r + ", " + c + "), diag index " + diagonalIndex);
     } else {
       return
     }
