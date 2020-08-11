@@ -241,7 +241,7 @@ class DiagonalizedIterativeDamerauLevenshteinCalculation {
               // update time!  Note that the col's contribution to the cost is always 0 here.
               let updatedTranspositionCost = addedCost + diagRow + 2;  // Because (r+3, c+2) is root, not (r+2, c+2).
 
-              let diagIndex = this.diagonalWidth - (transposeRow - transposeCol);
+              let diagIndex = this.diagonalWidth + (transposeCol - transposeRow);
               DiagonalizedIterativeDamerauLevenshteinCalculation.propagateUpdateFrom(returnBuffer, transposeRow, transposeCol, updatedTranspositionCost, diagIndex);
             }
           }
