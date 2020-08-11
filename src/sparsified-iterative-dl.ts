@@ -138,17 +138,13 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
     let guaranteedBound = this.diagonalWidth;
 
     do {
+      // val will never exceed the length of the longer string, no matter how large the threshold.
       if(val <= threshold) {
         return true;
       } else if(guaranteedBound < threshold) {
         buffer = buffer.increaseMaxDistance();
         guaranteedBound++;
         val = buffer.getHeuristicFinalCost();
-      } else if(guaranteedBound > Math.max(this.inputSequence.length, this.matchSequence.length)) {
-        // In case of excessively-high thresholds, we simply note that the final cost can never exceed
-        // the length of the longer input sequence.  (Substitute all characters, then insert / delete
-        // to reach the length of the longer string.)
-        return false;
       } else {
         break;
       }
