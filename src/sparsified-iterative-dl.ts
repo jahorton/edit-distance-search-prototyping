@@ -174,6 +174,16 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
     return Math.min(substitutionCost, deletionCost, insertionCost, transpositionCost);
   }
 
+  private static forDiagonalOfAxis(diagonalWidth: number, centerIndex: number, axisCap: number, closure: (axisIndex: number, diagIndex: number) => void) {
+    let diagonalCap = axisCap - centerIndex < diagonalWidth ? axisCap - centerIndex + diagonalWidth : 2 * diagonalWidth;
+    let startOffset = centerIndex - diagonalWidth;  // The axis's index for diagonal entry 0.  May be negative.
+    let diagonalStart = startOffset < 0 ? 0 : startOffset;
+
+    for(let diagonalIndex = diagonalStart - startOffset; diagonalIndex <= diagonalCap; diagonalIndex++) {
+      closure(startOffset + diagonalIndex, diagonalIndex);
+    }
+  }
+
   // Inputs add an extra row / first index entry.
   addInputChar(char: string): SparsifiedIterativeDamerauLevenshteinCalculation {
     let returnBuffer = new SparsifiedIterativeDamerauLevenshteinCalculation(this);
@@ -191,18 +201,9 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
       return returnBuffer;
     }
 
-    let c = returnBuffer.diagonalWidth - r; // position of first (virtual) column entry within the row
-    c = c < 0 ? 0 : c; // devirtualizes the entry.
-    let cMax = returnBuffer.matchSequence.length - r - 1 + returnBuffer.diagonalWidth; // position of the row's last (virtual) column entry, as indexed within the diagonal.
-    // devirtualizes the bound, ensures the max index lies within the 'diagonal'.
-    cMax = (cMax > 2 * returnBuffer.diagonalWidth) ? 2 * returnBuffer.diagonalWidth : cMax;
-
-    for(; c <= cMax; c++) {
-      // What is the true (virtual) index represented by this entry in the diagonal?
-      let trueColIndex = c + r - returnBuffer.diagonalWidth;
-
-      row[c] = SparsifiedIterativeDamerauLevenshteinCalculation.initialCostAt(returnBuffer, r, trueColIndex);
-    }
+    SparsifiedIterativeDamerauLevenshteinCalculation.forDiagonalOfAxis(returnBuffer.diagonalWidth, r, returnBuffer.matchSequence.length - 1, function(c, diagIndex) {
+      row[diagIndex] = SparsifiedIterativeDamerauLevenshteinCalculation.initialCostAt(returnBuffer, r, c);
+    });
 
     return returnBuffer;
   }
@@ -218,18 +219,11 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
       return returnBuffer;
     }
 
-    let r = c - returnBuffer.diagonalWidth; // position of first (virtualized) row within the resolvedDistances data structure.
-    r = r < 0 ? 0 : r; // devirtualizes the entry (no working with row -1)
-    let rMax = returnBuffer.inputSequence.length - 1; // position of the col's last (virtual) row entry.
-    // devirtualizes the bound, ensures the max index lies within the 'diagonal'.
-    rMax = (rMax > c + returnBuffer.diagonalWidth) ? c + returnBuffer.diagonalWidth : rMax;
-
-    for(; r <= rMax; r++) {
-      let cIndexInRow = c - r + this.diagonalWidth;
-      
+    SparsifiedIterativeDamerauLevenshteinCalculation.forDiagonalOfAxis(returnBuffer.diagonalWidth, c, returnBuffer.inputSequence.length - 1, function(r, diagIndex) {
       var row = returnBuffer.resolvedDistances[r];
-      row[cIndexInRow] = SparsifiedIterativeDamerauLevenshteinCalculation.initialCostAt(returnBuffer, r, c);
-    }
+      // Since diagIndex is from the perspective of the row, it must be inverted to properly index the column.
+      row[2 * returnBuffer.diagonalWidth - diagIndex] = SparsifiedIterativeDamerauLevenshteinCalculation.initialCostAt(returnBuffer, r, c);
+    });
 
     return returnBuffer;
   }
