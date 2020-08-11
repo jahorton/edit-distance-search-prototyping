@@ -292,10 +292,17 @@ describe('Diagonalized Damerau-Levenshtein implementation checks', function() {
       assert.equal(buffer.getHeuristicFinalCost(), 8);
     });
 
-    // Very difficult to construct a proper test for edit-distance propagation via transpositions;
-    // all my current attempts get resolved by the other propagations instead!
-    //
-    // They're the reason for some of the obnoxious strings seen above.
+    // Two transpositions:  da <- abcd, wxyz -> zw and one deletion ('g')
+    it("'daefghiwxyz' -> 'abcdefhizw' (width 1->2) = 7", function() {
+      // Relies on a propagated transposition and multiple propagated substitutions.
+      // Inspection of the diagonal-expansion update shows it involves a LOT of propagations!
+      let buffer = compute("daefghiwxyz", "abcdefhizw", "InputThenMatch", 1);
+      assert.equal(buffer.getHeuristicFinalCost(), 9);
+
+      // 1 -> 2
+      buffer = buffer.increaseMaxDistance();
+      assert.equal(buffer.getHeuristicFinalCost(), 7);
+    });
   });
 
   
