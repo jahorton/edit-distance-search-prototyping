@@ -242,6 +242,22 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
       return returnBuffer;
     }
 
+    // An abstraction of the common aspects of transposition handling during diagonal extensions.
+    function forPossibleTranspositionsInDiagonal(startPos: number, fixedChar: string, lookupString: string[], closure: (axisIndex: number, diagIndex: number) => void) {
+      let diagonalCap = 2 * (returnBuffer.diagonalWidth - 1);  // The maximum diagonal index permitted
+      let axisCap = lookupString.length - 1;   // The maximum index supported by the axis of iteration
+
+      // Ensures that diagonal iteration only occurs within the axis's supported range
+      diagonalCap = diagonalCap < axisCap - startPos ? diagonalCap : axisCap - startPos;
+
+      // Iterate within the diagonal and call our closure for any potential transpositions.
+      for(let diagonalIndex = 0; diagonalIndex <= diagonalCap; diagonalIndex++) {
+        if(fixedChar == lookupString[startPos + diagonalIndex]) {
+          closure(startPos + diagonalIndex, diagonalIndex);
+        }
+      }
+    }
+
     for(let r = 0; r < returnBuffer.inputSequence.length; r++) {
       let leftCell = Number.MAX_VALUE;
       let c = r - returnBuffer.diagonalWidth // External index of the left-most entry, which we will now calculate.
@@ -267,21 +283,10 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
             let rowChar = returnBuffer.inputSequence[r+1];
             // First possible match in input could be at index c + 2, which adjusts col c+2's cost.  Except that entry in r+2
             // doesn't exist yet - so we start with c+3 instead.
-            let startOffset = c+3;
-
-            // We have a fixed row index, variable column index.  Only one may vary for transpositions; otherwise, we can find cheaper through other edit types.
-            // Calculate the number of valid entries within the old diagonal - only these are updatable.  (The excluded ones from the 'new diagonal' don't exist yet.)
-            let colCap = 2 * this.diagonalWidth + 1;
-            colCap = (colCap < returnBuffer.matchSequence.length - startOffset) ? colCap: (returnBuffer.matchSequence.length - startOffset);
-
-            for(let diagCol = 0; diagCol < colCap; diagCol++) {  // Really, it's the index within the diagonal here.
-              let transposeCol = diagCol + startOffset;
-              if(returnBuffer.matchSequence[transposeCol] == rowChar) {
-                // update time!  Note that the row's contribution to the cost is always 0 here.
-                let updatedTranspositionCost = addedCost + diagCol /* col shift count */ + 2;  // Because (r+2, c+3) is root, not (r+2, c+2).
-                SparsifiedIterativeDamerauLevenshteinCalculation.propagateUpdateFrom(returnBuffer, transposeRow, transposeCol, updatedTranspositionCost, diagCol);
-              }
-            }
+            forPossibleTranspositionsInDiagonal(c + 3, rowChar, returnBuffer.matchSequence, function(axisIndex, diagIndex) {
+              // Because (r+2, c+3) is root, not (r+2, c+2).  Min cost of 2.
+              SparsifiedIterativeDamerauLevenshteinCalculation.propagateUpdateFrom(returnBuffer, transposeRow, axisIndex, addedCost + diagIndex + 2, diagIndex);
+            });
           }
         }
       }
@@ -314,24 +319,11 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
             let colChar = returnBuffer.matchSequence[r+1];
             // First possible match in input could be at index r + 2, which adjusts row r+2's cost.  Except that entry in c+2
             // doesn't exist yet - so we start with r+3 instead.
-            let startOffset = r+3;
-
-            // We have a variable row index, fixed column index.  Only one may vary for transpositions; otherwise, we can find cheaper through other edit types.
-            // Calculate the number of valid entries within the diagonal - only these are updatable.  (The excluded ones from the 'new diagonal' don't exist yet.)
-            let rowCap = 2 * this.diagonalWidth;
-            let maxRow = returnBuffer.inputSequence.length - 1;
-            rowCap = (rowCap < maxRow - startOffset) ? rowCap: (maxRow - startOffset);
-            for(let diagRow = 0; diagRow <= rowCap; diagRow++) {
-              let transposeRow = diagRow + startOffset;
-              if(returnBuffer.inputSequence[transposeRow] == colChar) {
-                // update time!  Note that the col's contribution to the cost is always 0 here.
-                let updatedTranspositionCost = addedCost + diagRow + 2;  // Because (r+3, c+2) is root, not (r+2, c+2).
-
-                // The expected 'diagonal index' is from the perspective of the column, not the row.
-                let diagonalIndex = 2 * this.diagonalWidth - diagRow;
-                SparsifiedIterativeDamerauLevenshteinCalculation.propagateUpdateFrom(returnBuffer, transposeRow, transposeCol, updatedTranspositionCost, diagonalIndex);
-              }
-            }
+            forPossibleTranspositionsInDiagonal(r+3, colChar, returnBuffer.inputSequence, function(axisIndex, diagIndex) {
+              let diagColIndex = 2 * (returnBuffer.diagonalWidth - 1) - diagIndex;
+              // Because (r+3, c+2) is root, not (r+2, c+2).  Min cost of 2.
+              SparsifiedIterativeDamerauLevenshteinCalculation.propagateUpdateFrom(returnBuffer, axisIndex, transposeCol, addedCost + diagIndex + 2, diagColIndex);
+            });
           }
         }
       }
