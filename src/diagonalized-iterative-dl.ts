@@ -234,8 +234,8 @@ class DiagonalizedIterativeDamerauLevenshteinCalculation {
           // We have a variable row index, fixed column index.  Only one may vary for transpositions; otherwise, we can find cheaper through other edit types.
           // Calculate the number of valid entries within the diagonal - only these are updatable.  (The excluded ones from the 'new diagonal' don't exist yet.)
           let rowCap = 2 * this.diagonalWidth + 1;
-          rowCap = (rowCap < returnBuffer.inputSequence.length - startOffset) ? rowCap: (returnBuffer.inputSequence.length - startOffset);
-          for(let diagRow = r + 3; diagRow < rowCap; diagRow++) {
+          rowCap = (rowCap < returnBuffer.inputSequence.length - startOffset) ? rowCap : (returnBuffer.inputSequence.length - startOffset);
+          for(let diagRow = 0; diagRow < rowCap; diagRow++) {
             let transposeRow = diagRow + startOffset;
             if(returnBuffer.inputSequence[transposeRow] == colChar) {
               // update time!  Note that the col's contribution to the cost is always 0 here.

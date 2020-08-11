@@ -319,7 +319,10 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
             // Calculate the number of valid entries within the diagonal - only these are updatable.  (The excluded ones from the 'new diagonal' don't exist yet.)
             let rowCap = 2 * this.diagonalWidth + 1;
             rowCap = (rowCap < returnBuffer.inputSequence.length - startOffset) ? rowCap: (returnBuffer.inputSequence.length - startOffset);
-            let diagonalIndex = (r - c - 1);
+            // (c+2) - (r+3) = c - r - 1.
+            // That gives the offset from the diagonal's center, which has an index equal to the "diagonal width" of the row...
+            // which uses the old width (as it's an as-of-yet not-updated row).
+            let diagonalIndex = this.diagonalWidth + (c - r - 1); 
             for(let transposeRow = 0; transposeRow < rowCap && diagonalIndex >= 0; transposeRow++, diagonalIndex--) {
               if(returnBuffer.inputSequence[transposeRow] == colChar) {
                 // update time!  Note that the col's contribution to the cost is always 0 here.

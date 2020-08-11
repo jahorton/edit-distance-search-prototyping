@@ -327,12 +327,20 @@ describe('Sparsified Damerau-Levenshtein implementation checks', function() {
     });
 
     // One transposition:  da <- abcd, one insertion ('g'), and two deletions ('yz').
-    it("'daefhiwxyz' -> 'abcdefghiyz' (width 1->3) = 6", function() {
+    it("'daefhiwxyz' -> 'abcdefghiyz' (width 1->2) = 6", function() {
       let buffer = compute("daefhiwxyz", "abcdefghiyz", "InputThenMatch", 1);
       assert.equal(buffer.getHeuristicFinalCost(), 9);
 
       // 1 -> 2
+      // Will become too small during expansion if not properly checking
+      // transpositions for the diagonal's right cell.
       buffer = buffer.increaseMaxDistance();
+      assert.equal(buffer.getHeuristicFinalCost(), 7);
+    });
+
+    // One transposition:  da <- abcd, one insertion ('g'), and two deletions ('yz').
+    it("'daefhiwxyz' -> 'abcdefghiyz' (width 2->3) = 6", function() {
+      let buffer = compute("daefhiwxyz", "abcdefghiyz", "InputThenMatch", 2);
       assert.equal(buffer.getHeuristicFinalCost(), 7);
 
       // 2 -> 3
