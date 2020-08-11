@@ -206,7 +206,7 @@ describe('Sparsified Damerau-Levenshtein implementation checks', function() {
 
     // Two transpositions:  abcd -> da, zx <- xyz and one deletion ('g')
     // The intermediate 'ef[g]hi' ensures that the two transpositions are kept separate.
-    it("'abcdefghizx' -> 'daefhixyz' (width 2) = 7", function() {
+    it("'abcdefghizx' -> 'daefhixyz' (width 2) = 8", function() {
       let buffer = compute("abcdefghizx", "daefhixyz", "InputThenMatch", 2);
       assert.equal(buffer.getHeuristicFinalCost(), 8);
     });
@@ -284,6 +284,8 @@ describe('Sparsified Damerau-Levenshtein implementation checks', function() {
       assert.equal(buffer.getHeuristicFinalCost(), Number.MAX_VALUE);
 
       // 1 -> 2
+      // Will become too small during expansion if not properly checking
+      // transpositions for the diagonal's left cell.
       buffer = buffer.increaseMaxDistance();
       assert.equal(buffer.getHeuristicFinalCost(), 8);
     });
