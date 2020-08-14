@@ -350,19 +350,19 @@ class SparsifiedIterativeDamerauLevenshteinCalculation {
       this.propagateUpdateFrom(buffer, r+1, c, updateCost, diagonalIndex-1);
     }
 
-    // If both, check for propagation via substitution
+    // If both, check for propagation via substitution & possible transpositions
     if(internalRow && internalCol) {
       let updateCost = value + (buffer.inputSequence[r+1] == buffer.matchSequence[c+1] ? 0 : 1);
       this.propagateUpdateFrom(buffer, r+1, c+1, updateCost, diagonalIndex);
-    }
 
-    // Propagating transpositions
-    let nextInputIndex = buffer.inputSequence.indexOf(buffer.matchSequence[c+1], r+2);
-    let nextMatchIndex = buffer.matchSequence.indexOf(buffer.inputSequence[r+1], c+2);
+      // Propagating transpositions
+      let nextInputIndex = buffer.inputSequence.indexOf(buffer.matchSequence[c+1], r+2);
+      let nextMatchIndex = buffer.matchSequence.indexOf(buffer.inputSequence[r+1], c+2);
 
-    if(nextInputIndex > 0 && nextMatchIndex > 0) {
-      let transpositionCost = value + (nextInputIndex - r - 2) + 1 + (nextMatchIndex - c - 2);
-      this.propagateUpdateFrom(buffer, nextInputIndex, nextMatchIndex, transpositionCost, (buffer.diagonalWidth - 1) + nextMatchIndex - nextInputIndex);
+      if(nextInputIndex > 0 && nextMatchIndex > 0) {
+        let transpositionCost = value + (nextInputIndex - r - 2) + 1 + (nextMatchIndex - c - 2);
+        this.propagateUpdateFrom(buffer, nextInputIndex, nextMatchIndex, transpositionCost, (buffer.diagonalWidth - 1) + nextMatchIndex - nextInputIndex);
+      }
     }
   }
 }
